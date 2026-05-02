@@ -22,7 +22,7 @@ class SubscriptionScreen extends StatelessWidget {
           _buildPlanCard(
             context,
             'Daily Lunch Box',
-            'Authentic North Indian Thali',
+            'Authentic North Indian Thali with 3 Rotis, Dal, Sabzi, and Rice. Perfect for office-goers.',
             '₹2,400/month',
             '22 Meals · Mon to Fri',
             const Color(0xFFFF6B47),
@@ -30,7 +30,7 @@ class SubscriptionScreen extends StatelessWidget {
           _buildPlanCard(
             context,
             'Healthy Dinner',
-            'Low carb, high protein meals',
+            'Low oil, high protein meals curated by nutritionists. Includes salads and grilled items.',
             '₹3,200/month',
             '30 Meals · Daily',
             const Color(0xFF2D5F3F),
@@ -38,7 +38,7 @@ class SubscriptionScreen extends StatelessWidget {
           _buildPlanCard(
             context,
             'South Indian Breakfast',
-            'Idli, Dosa & Vada variety',
+            'Start your day with healthy steamed Idlis, crispy Dosas, and fresh Chutneys.',
             '₹1,800/month',
             '20 Meals · Mon to Sat',
             const Color(0xFFF4B942),
@@ -65,7 +65,7 @@ class SubscriptionScreen extends StatelessWidget {
           SizedBox(height: 16),
           Text('Save 20% with Plans', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
-          Text('Subscribe to your favorite cook and get healthy home food delivered daily.', 
+          Text('Subscribe to your favorite neighbor cook and get fresh home food delivered daily to your doorstep.', 
                style: TextStyle(color: Colors.white70, fontSize: 14)),
         ],
       ),
@@ -99,8 +99,9 @@ class SubscriptionScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(subtitle, style: const TextStyle(color: AppTheme.textMuted, fontSize: 12)),
                     const SizedBox(height: 4),
+                    Text(subtitle, style: const TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Text(price, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
@@ -124,18 +125,34 @@ class SubscriptionScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Subscribe to Plan?'),
-        content: Text('Would you like to subscribe to the "$title" for $price?'),
+        title: Text('Subscribe to $title?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Benefits:'),
+            const SizedBox(height: 8),
+            const Row(children: [Icon(Icons.check, size: 16, color: AppTheme.success), SizedBox(width: 8), Text('Free Delivery')]),
+            const Row(children: [Icon(Icons.check, size: 16, color: AppTheme.success), SizedBox(width: 8), Text('Priority Slot Booking')]),
+            const Row(children: [Icon(Icons.check, size: 16, color: AppTheme.success), SizedBox(width: 8), Text('Customizable Menu')]),
+            const SizedBox(height: 16),
+            Text('Price: $price', style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Successfully subscribed to $title!'), backgroundColor: AppTheme.success),
+                SnackBar(
+                  content: Text('Successfully subscribed to $title!'),
+                  backgroundColor: AppTheme.success,
+                  behavior: SnackBarBehavior.floating,
+                ),
               );
             },
-            child: const Text('Confirm'),
+            child: const Text('Confirm & Pay'),
           ),
         ],
       ),

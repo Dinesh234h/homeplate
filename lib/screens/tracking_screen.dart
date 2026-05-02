@@ -13,6 +13,10 @@ class TrackingScreen extends StatefulWidget {
 
 class _TrackingScreenState extends State<TrackingScreen> {
   final TextEditingController _chatController = TextEditingController();
+  final List<Map<String, String>> _messages = [
+    {"sender": "chef", "text": "Hi! I've started preparing your meal."},
+    {"sender": "chef", "text": "It should be ready in about 15 minutes."},
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -25,121 +29,163 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Order Status', style: TextStyle(fontWeight: FontWeight.bold)),
-        leading: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+        title: Column(
+          children: [
+            const Text('Tracking Order', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Order #${order.id}', style: const TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+          ],
+        ),
+        leading: IconButton(icon: const Icon(Icons.arrow_back_ios, size: 20), onPressed: () => Navigator.pop(context)),
+        actions: [
+          IconButton(
+            onPressed: () => _showCallDialog(context, order.cookName),
+            icon: const Icon(Icons.phone_in_talk, color: AppTheme.success),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
-          _buildStatusHeader(order),
-          _buildTimeline(order),
-          const Spacer(),
-          _buildCommunicationBar(context, order),
+          _buildStatusBanner(order),
+          Expanded(child: _buildChatArea()),
+          _buildChatInput(order.cookName),
         ],
       ),
     );
   }
 
-  Widget _buildStatusHeader(Order order) {
-    String message;
-    String emoji;
-    
-    switch (order.status) {
-      case 'placed': message = 'Order Placed'; emoji = '📝'; break;
-      case 'accepted': message = 'Chef accepted your order'; emoji = '👩‍🍳'; break;
-      case 'cooking': message = 'Cooking your meal'; emoji = '🍳'; break;
-      case 'ready': message = 'Ready for Pickup'; emoji = '🛍️'; break;
-      default: message = 'Status Unknown'; emoji = '❓';
-    }
-
+  Widget _buildStatusBanner(Order order) {
     return Container(
-      padding: const EdgeInsets.all(32),
-      child: Column(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+      decoration: BoxDecoration(
+        color: AppTheme.bg,
+        border: Border(bottom: BorderSide(color: AppTheme.border)),
+      ),
+      child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 60)),
-          const SizedBox(height: 16),
-          Text(message, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
-          Text('OTP for pickup: ${order.otp}', style: const TextStyle(color: AppTheme.secondary, fontWeight: FontWeight.bold, fontSize: 18)),
+          _buildStatusIcon(order.status),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_getStatusTitle(order.status), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                Text(_getStatusSub(order.status), style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppTheme.border)),
+            child: Column(
+              children: [
+                const Text('OTP', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
+                Text(order.otp, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppTheme.primary, letterSpacing: 1)),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTimeline(Order order) {
-    final statuses = ['placed', 'accepted', 'cooking', 'ready'];
-    final currentIndex = statuses.indexOf(order.status);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Column(
-        children: List.generate(statuses.length, (index) {
-          final isPast = index <= currentIndex;
-          final isLast = index == statuses.length - 1;
-          
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: isPast ? AppTheme.primary : AppTheme.border,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  if (!isLast)
-                    Container(width: 2, height: 40, color: isPast ? AppTheme.primary : AppTheme.border),
-                ],
-              ),
-              const SizedBox(width: 20),
-              Text(
-                statuses[index].toUpperCase(),
-                style: TextStyle(
-                  fontWeight: isPast ? FontWeight.bold : FontWeight.normal,
-                  color: isPast ? AppTheme.text : AppTheme.textMuted,
-                ),
-              ),
-            ],
-          );
-        }),
-      ),
+  Widget _buildStatusIcon(String status) {
+    IconData icon;
+    Color color;
+    switch (status) {
+      case 'placed': icon = Icons.receipt_long; color = AppTheme.primary; break;
+      case 'accepted': icon = Icons.thumb_up; color = AppTheme.secondary; break;
+      case 'cooking': icon = Icons.restaurant; color = AppTheme.accent; break;
+      case 'ready': icon = Icons.shopping_bag; color = AppTheme.success; break;
+      default: icon = Icons.help; color = AppTheme.textMuted;
+    }
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+      child: Icon(icon, color: color, size: 24),
     );
   }
 
-  Widget _buildCommunicationBar(BuildContext context, Order order) {
+  String _getStatusTitle(String status) {
+    if (status == 'placed') return 'Order Placed';
+    if (status == 'accepted') return 'Chef Accepted';
+    if (status == 'cooking') return 'Cooking Now';
+    if (status == 'ready') return 'Ready for Pickup!';
+    return 'Processing';
+  }
+
+  String _getStatusSub(String status) {
+    if (status == 'ready') return 'Please head to the kitchen';
+    return 'Next: We will notify you';
+  }
+
+  Widget _buildChatArea() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: _messages.length,
+      itemBuilder: (context, index) {
+        final msg = _messages[index];
+        final isChef = msg['sender'] == 'chef';
+        return Align(
+          alignment: isChef ? Alignment.centerLeft : Alignment.centerRight,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: isChef ? AppTheme.bg : AppTheme.primary,
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(16),
+                topRight: const Radius.circular(16),
+                bottomLeft: Radius.circular(isChef ? 0 : 16),
+                bottomRight: Radius.circular(isChef ? 16 : 0),
+              ),
+            ),
+            child: Text(
+              msg['text']!,
+              style: TextStyle(color: isChef ? AppTheme.text : Colors.white, fontSize: 13),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildChatInput(String name) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        border: Border(top: BorderSide(color: AppTheme.border)),
       ),
       child: SafeArea(
-        child: Column(
+        child: Row(
           children: [
-            Row(
-              children: [
-                CircleAvatar(backgroundColor: AppTheme.bg, child: Text(order.cookAvatar)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(order.cookName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const Text('Your neighbor chef', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-                    ],
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(color: AppTheme.bg, borderRadius: BorderRadius.circular(24)),
+                child: TextField(
+                  controller: _chatController,
+                  decoration: InputDecoration(
+                    hintText: 'Message $name...',
+                    border: InputBorder.none,
+                    hintStyle: const TextStyle(fontSize: 13),
                   ),
                 ),
-                IconButton(
-                  onPressed: () => _showCallDialog(context, order.cookName),
-                  icon: const Icon(Icons.phone, color: AppTheme.success),
-                ),
-                IconButton(
-                  onPressed: () => _showChatSheet(context, order.cookName),
-                  icon: const Icon(Icons.chat_bubble, color: AppTheme.primary),
-                ),
-              ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            IconButton(
+              onPressed: () {
+                if (_chatController.text.isNotEmpty) {
+                  setState(() {
+                    _messages.add({"sender": "user", "text": _chatController.text});
+                    _chatController.clear();
+                  });
+                }
+              },
+              icon: const Icon(Icons.send_rounded, color: AppTheme.primary),
             ),
           ],
         ),
@@ -152,49 +198,15 @@ class _TrackingScreenState extends State<TrackingScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Call $name?'),
-        content: const Text('Connect with your neighbor to coordinate pickup.'),
+        content: Text('Contact your neighbor chef directly to coordinate pickup.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Call Now')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
+            child: const Text('Call Now'),
+          ),
         ],
-      ),
-    );
-  }
-
-  void _showChatSheet(BuildContext context, String name) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Chat with $name', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            Container(
-              height: 200,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: AppTheme.bg, borderRadius: BorderRadius.circular(12)),
-              child: const Center(child: Text('No messages yet', style: TextStyle(color: AppTheme.textMuted))),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _chatController,
-                    decoration: const InputDecoration(hintText: 'Type a message...'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.send, color: AppTheme.primary)),
-              ],
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
       ),
     );
   }

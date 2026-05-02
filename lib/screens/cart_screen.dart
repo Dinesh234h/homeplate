@@ -71,13 +71,13 @@ class _CartScreenState extends State<CartScreen> {
             children: [
               _buildCookHeader(state),
               const SizedBox(height: 24),
-              _buildAddressSection(state),
+              _buildAddressSection(context, state),
               const SizedBox(height: 24),
               ...state.cart.asMap().entries.map((entry) => _buildCartItem(state, entry.key, entry.value)),
               const SizedBox(height: 24),
-              _buildGroupOrderCard(),
+              _buildGroupOrderCard(context),
               const SizedBox(height: 24),
-              _buildPaymentSection(state),
+              _buildPaymentSection(context, state),
               const SizedBox(height: 24),
               _buildPromoSection(),
               const SizedBox(height: 24),
@@ -120,6 +120,71 @@ class _CartScreenState extends State<CartScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAddressSection(BuildContext context, AppState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('DELIVERY ADDRESS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.border),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.location_on, color: AppTheme.primary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(state.userAddress ?? 'Select Address', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('Delivering to your door', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () => _showAddressSelector(context, state),
+                child: const Text('CHANGE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showAddressSelector(BuildContext context, AppState state) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Deliver to:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            ...state.savedAddresses.map((a) => ListTile(
+              leading: const Icon(Icons.home_outlined, color: AppTheme.primary),
+              title: Text(a),
+              trailing: state.userAddress == a ? const Icon(Icons.check_circle, color: AppTheme.success) : null,
+              onTap: () {
+                state.setUserInfo(state.userName ?? 'User', a);
+                Navigator.pop(context);
+              },
+            )),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -179,7 +244,7 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  Widget _buildGroupOrderCard() {
+  Widget _buildGroupOrderCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -201,7 +266,7 @@ class _CartScreenState extends State<CartScreen> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () => _showInviteDialog(context),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               minimumSize: Size.zero,
@@ -214,50 +279,21 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
+  void _showInviteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Invite Friends'),
+        content: const Text('Share this link with your friends to start a group order!\n\nhttps://homeplate.app/group/12345'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+          ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Copy Link')),
+        ],
+      ),
     );
   }
 
-    );
-  }
-
-  Widget _buildAddressSection(AppState state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('DELIVERY ADDRESS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.border),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.location_on, color: AppTheme.primary),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(state.userAddress ?? 'Select Address', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const Text('Delivering to your door', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
-                  ],
-                ),
-              ),
-              TextButton(
-                onPressed: () {},
-                child: const Text('CHANGE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPaymentSection(AppState state) {
+  Widget _buildPaymentSection(BuildContext context, AppState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -274,23 +310,51 @@ class _CartScreenState extends State<CartScreen> {
             children: [
               const Icon(Icons.payment, color: AppTheme.secondary),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('UPI: avi@okaxis', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Default Method', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                    Text(state.selectedPayment, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('Secured Payment', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
                   ],
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () => _showPaymentSelector(context, state),
                 child: const Text('CHANGE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  void _showPaymentSelector(BuildContext context, AppState state) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Select Payment Method', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            ...state.paymentMethods.map((p) => ListTile(
+              leading: const Icon(Icons.payment, color: AppTheme.secondary),
+              title: Text(p),
+              trailing: state.selectedPayment == p ? const Icon(Icons.check_circle, color: AppTheme.success) : null,
+              onTap: () {
+                state.setPaymentMethod(p);
+                Navigator.pop(context);
+              },
+            )),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
     );
   }
 
@@ -377,11 +441,7 @@ class _CartScreenState extends State<CartScreen> {
       ),
       child: SafeArea(
         child: ElevatedButton(
-          onPressed: state.isLoading ? null : () {
-            final cook = state.cooks.firstWhere((c) => c.id == state.cart[0].cookId);
-            state.placeOrderReal(cook, 'Today, 1:00 PM');
-            Navigator.pushNamed(context, '/tracking');
-          },
+          onPressed: state.isLoading ? null : () => _placeOrder(context, state, grandTotal),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -395,6 +455,50 @@ class _CartScreenState extends State<CartScreen> {
               Text('₹$grandTotal'),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _placeOrder(BuildContext context, AppState state, double grandTotal) async {
+    final cook = state.cooks.firstWhere((c) => c.id == state.cart[0].cookId);
+    await state.placeOrderReal(cook, 'Today, 1:00 PM');
+    if (!mounted) return;
+    
+    // Show Success UI
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _buildSuccessUI(context, grandTotal),
+    );
+
+    Future.delayed(const Duration(seconds: 3), () {
+      Navigator.pop(context); // Close dialog
+      Navigator.pushReplacementNamed(context, '/tracking');
+    });
+  }
+
+  Widget _buildSuccessUI(BuildContext context, double total) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.zero,
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: Colors.white,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.check_circle, color: AppTheme.success, size: 100),
+            const SizedBox(height: 24),
+            const Text('Order Placed Successfully!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('₹${total.round()} paid via UPI', style: const TextStyle(color: AppTheme.textMuted)),
+            const SizedBox(height: 40),
+            const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary)),
+            const SizedBox(height: 16),
+            const Text('Connecting to your neighbor chef...', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+          ],
         ),
       ),
     );

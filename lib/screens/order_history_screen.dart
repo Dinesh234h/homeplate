@@ -102,7 +102,7 @@ class OrderHistoryScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Adding items to cart for reorder...'))),
+                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reordering items...'))),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -113,12 +113,12 @@ class OrderHistoryScreen extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => _showRatingDialog(context),
+                  onPressed: () => _showRatingDialog(context, order.cookName),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Rate Meal', style: TextStyle(fontSize: 12)),
+                  child: const Text('Rate Cook', style: TextStyle(fontSize: 12)),
                 ),
               ),
             ],
@@ -128,24 +128,49 @@ class OrderHistoryScreen extends StatelessWidget {
     );
   }
 
-  void _showRatingDialog(BuildContext context) {
+  void _showRatingDialog(BuildContext context, String chefName) {
+    int selectedRating = 0;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rate your Meal'),
-        content: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.star, color: Colors.amber),
-            Icon(Icons.star, color: Colors.amber),
-            Icon(Icons.star, color: Colors.amber),
-            Icon(Icons.star, color: Colors.amber),
-            Icon(Icons.star_border, color: Colors.amber),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Rate $chefName'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('How was the food and experience?', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) => IconButton(
+                  icon: Icon(
+                    index < selectedRating ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                    size: 32,
+                  ),
+                  onPressed: () => setDialogState(() => selectedRating = index + 1),
+                )),
+              ),
+              const SizedBox(height: 16),
+              const TextField(
+                maxLines: 2,
+                decoration: InputDecoration(hintText: 'Add a comment (optional)', hintStyle: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: selectedRating == 0 ? null : () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Thank you for rating $chefName!'), backgroundColor: AppTheme.success),
+                );
+              },
+              child: const Text('Submit'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Submit')),
-        ],
       ),
     );
   }

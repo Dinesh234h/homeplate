@@ -13,14 +13,16 @@ class AppState extends ChangeNotifier {
   UserRole activeRole = UserRole.consumer;
   User? firebaseUser;
   bool isAvailable = true;
-  String? userName;
-  String? userAddress;
-  String? phone;
+  String? userName = "Avi Nash";
+  String? userAddress = "Flat 402, Green Glen Layout, Bellandur";
+  String? phone = "+91 9876543210";
   String selectedFilter = 'All';
+  String searchQuery = '';
   
   // Advanced State for "Working Buttons"
   List<String> savedAddresses = ["Home: Flat 402, Bellandur", "Work: Prestige Tech Park"];
-  List<String> paymentMethods = ["UPI: avi@okaxis", "Visa ending in 4242"];
+  List<String> paymentMethods = ["UPI: avi@okaxis", "Visa ending in 4242", "Cash on Delivery (COD)"];
+  String selectedPayment = "UPI: avi@okaxis";
   double walletBalance = 240.0;
   List<String> likedPosts = [];
 
@@ -43,6 +45,11 @@ class AppState extends ChangeNotifier {
     _initMockData();
   }
 
+  void setSearchQuery(String q) {
+    searchQuery = q.toLowerCase();
+    notifyListeners();
+  }
+
   /// F03/F04: Connected Hyperlocal Discovery
   void setFilter(String filter) {
     selectedFilter = filter;
@@ -50,7 +57,12 @@ class AppState extends ChangeNotifier {
   }
 
   List<Cook> get filteredCooks {
-    List<Cook> results = List.from(cooks);
+    List<Cook> results = cooks.where((c) {
+      final matchesSearch = c.name.toLowerCase().contains(searchQuery) || 
+                            c.menu.any((d) => d.name.toLowerCase().contains(searchQuery));
+      return matchesSearch;
+    }).toList();
+
     if (selectedFilter == 'Pure Veg') {
       results = results.where((c) => c.veg).toList();
     } else if (selectedFilter == 'Top Rated') {
@@ -64,6 +76,17 @@ class AppState extends ChangeNotifier {
   /// Button Logic: Addresses & Payments
   void addAddress(String addr) {
     savedAddresses.add(addr);
+    notifyListeners();
+  }
+
+  void updateAddress(int index, String newAddr) {
+    savedAddresses[index] = newAddr;
+    if (userAddress == savedAddresses[index]) userAddress = newAddr;
+    notifyListeners();
+  }
+
+  void setPaymentMethod(String p) {
+    selectedPayment = p;
     notifyListeners();
   }
 
@@ -124,11 +147,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateProfile(String name, String p) {
+    userName = name;
+    phone = p;
+    notifyListeners();
+  }
+
   void setUserInfo(String name, String address) {
     userName = name;
     userAddress = address;
     if (address.isNotEmpty && !savedAddresses.contains(address)) {
-      savedAddresses.insert(0, "Current: $address");
+      savedAddresses.insert(0, address);
     }
     notifyListeners();
   }
@@ -269,6 +298,36 @@ class AppState extends ChangeNotifier {
             allergens: ["Dairy", "Gluten"],
             nutri: [Nutrient("Cal", "380"), Nutrient("Prot", "18g"), Nutrient("Carb", "32g")],
           ),
+          Dish(
+            id: "d2_2",
+            name: "Aloo Paratha (2 pcs)",
+            desc: "Spiced potato stuffed flatbread with curd and pickle",
+            emoji: "🥙",
+            price: 90,
+            rating: 4.8,
+            orders: 450,
+            veg: true,
+            bg: "#FFF9C4",
+            hbg: "linear-gradient(135deg, #FF6B47, #F4B942)",
+            ingredients: "Wheat flour, Potato, Spices",
+            allergens: ["Gluten"],
+            nutri: [Nutrient("Cal", "310"), Nutrient("Prot", "8g"), Nutrient("Carb", "45g")],
+          ),
+          Dish(
+            id: "d2_3",
+            name: "Kadai Paneer",
+            desc: "Paneer cubes cooked with bell peppers and freshly ground spices",
+            emoji: "🍲",
+            price: 180,
+            rating: 4.6,
+            orders: 320,
+            veg: true,
+            bg: "#FFCCBC",
+            hbg: "linear-gradient(135deg, #FF6B47, #F4B942)",
+            ingredients: "Paneer, Capsicum, Tomato, Spices",
+            allergens: ["Dairy"],
+            nutri: [Nutrient("Cal", "340"), Nutrient("Prot", "16g"), Nutrient("Carb", "12g")],
+          ),
         ],
       ),
       Cook(
@@ -306,6 +365,36 @@ class AppState extends ChangeNotifier {
             ingredients: "Rice, Lentils, Vegetables, Tamarind, Spices",
             allergens: [],
             nutri: [Nutrient("Cal", "350"), Nutrient("Prot", "12g"), Nutrient("Carb", "58g")],
+          ),
+          Dish(
+            id: "d4",
+            name: "Set Dosa (3 pcs)",
+            desc: "Soft and fluffy Dosas served with Saagu and Chutney",
+            emoji: "🥞",
+            price: 80,
+            rating: 4.8,
+            orders: 950,
+            veg: true,
+            bg: "#FFF9C4",
+            hbg: "linear-gradient(135deg, #2D5F3F, #5DAA75)",
+            ingredients: "Rice, Urad Dal, Spices",
+            allergens: [],
+            nutri: [Nutrient("Cal", "280"), Nutrient("Prot", "6g"), Nutrient("Carb", "48g")],
+          ),
+          Dish(
+            id: "d5",
+            name: "Ragi Mudde Thali",
+            desc: "Finger millet ball served with Soppu Saaru and Bassaru",
+            emoji: "🥣",
+            price: 130,
+            rating: 4.9,
+            orders: 540,
+            veg: true,
+            bg: "#D7CCC8",
+            hbg: "linear-gradient(135deg, #2D5F3F, #5DAA75)",
+            ingredients: "Ragi, Greens, Lentils, Spices",
+            allergens: [],
+            nutri: [Nutrient("Cal", "410"), Nutrient("Prot", "10g"), Nutrient("Carb", "72g")],
           ),
         ],
       ),

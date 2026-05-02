@@ -5,6 +5,7 @@ import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
 import '../models/app_models.dart';
 import 'dish_detail_screen.dart';
+import 'cook_menu_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -19,7 +20,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           children: [
             _buildHeader(context, state),
-            _buildSearchBar(),
+            _buildSearchBar(state),
             _buildFilters(state),
             Expanded(
               child: ListView(
@@ -161,11 +162,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(AppState state) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: TextField(
-        onSubmitted: (v) => {},
+        onChanged: (v) => state.setSearchQuery(v),
         decoration: InputDecoration(
           hintText: 'Search for dishes or cooks',
           prefixIcon: const Icon(Icons.search, color: AppTheme.textMuted),
@@ -329,7 +330,7 @@ class HomeScreen extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DishDetailScreen(cook: cook, dish: cook.menu[0]),
+            builder: (context) => CookMenuScreen(cook: cook),
           ),
         );
       },
