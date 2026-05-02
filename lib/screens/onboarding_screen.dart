@@ -19,7 +19,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final TextEditingController _addressController = TextEditingController();
 
   void _next() {
-    if (_currentStep < 3) {
+    if (_currentStep < 5) {
       _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     } else {
       context.read<AppState>().setUserInfo(_nameController.text, _addressController.text);
@@ -48,7 +48,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           },
         ),
         title: Row(
-          children: List.generate(4, (index) => Expanded(
+          children: List.generate(6, (index) => Expanded(
             child: Container(
               height: 4,
               margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -69,13 +69,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           _buildDietStep(),
           _buildCuisineStep(),
           _buildPreferenceStep(),
+          _buildAllergiesStep(),
+          _buildHealthGoalsStep(),
         ],
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(24.0),
         child: ElevatedButton(
           onPressed: _isNextEnabled() ? _next : null,
-          child: Text(_currentStep == 3 ? 'Finish' : 'Next'),
+          child: Text(_currentStep == 5 ? 'Finish' : 'Next'),
         ),
       ),
     );
@@ -209,7 +211,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SizedBox(height: 8),
           const Text('Tailor the discovery engine to your vibe.', style: TextStyle(color: AppTheme.textMuted)),
           const SizedBox(height: 40),
-          
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -226,7 +227,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             activeColor: AppTheme.primary,
           ),
           const SizedBox(height: 32),
-          
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -242,6 +242,88 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             max: 200,
             divisions: 16,
             activeColor: AppTheme.primary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAllergiesStep() {
+    final state = context.watch<AppState>();
+    final List<String> common = ['Peanuts', 'Dairy', 'Gluten', 'Eggs', 'Soy', 'Shellfish', 'Mustard', 'None'];
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Food Allergies', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          const Text('Safety first. We will flag these for cooks.', style: TextStyle(color: AppTheme.textMuted)),
+          const SizedBox(height: 32),
+          Wrap(
+            spacing: 8,
+            runSpacing: 12,
+            children: common.map((a) {
+              final selected = state.allergies.contains(a);
+              return FilterChip(
+                label: Text(a),
+                selected: selected,
+                onSelected: (val) {
+                  setState(() {
+                    if (val) { state.allergies.add(a); }
+                    else { state.allergies.remove(a); }
+                  });
+                },
+                selectedColor: AppTheme.primarySoft,
+                checkmarkColor: AppTheme.primary,
+                labelStyle: TextStyle(
+                  color: selected ? AppTheme.primary : AppTheme.text,
+                  fontWeight: FontWeight.bold,
+                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100), side: BorderSide(color: selected ? AppTheme.primary : AppTheme.border, width: 2)),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHealthGoalsStep() {
+    final state = context.watch<AppState>();
+    final List<String> goals = ['Weight Loss', 'High Protein', 'Low Carb', 'Muscle Gain', 'Better Digestion', 'Energy Boost'];
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Health Goals', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          const Text('Tell us what you want to achieve.', style: TextStyle(color: AppTheme.textMuted)),
+          const SizedBox(height: 32),
+          Wrap(
+            spacing: 8,
+            runSpacing: 12,
+            children: goals.map((g) {
+              final selected = state.healthGoals.contains(g);
+              return FilterChip(
+                label: Text(g),
+                selected: selected,
+                onSelected: (val) {
+                  setState(() {
+                    if (val) { state.healthGoals.add(g); }
+                    else { state.healthGoals.remove(g); }
+                  });
+                },
+                selectedColor: AppTheme.primarySoft,
+                checkmarkColor: AppTheme.primary,
+                labelStyle: TextStyle(
+                  color: selected ? AppTheme.primary : AppTheme.text,
+                  fontWeight: FontWeight.bold,
+                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100), side: BorderSide(color: selected ? AppTheme.primary : AppTheme.border, width: 2)),
+              );
+            }).toList(),
           ),
         ],
       ),

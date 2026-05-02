@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+firebase-admin
+pydantic[email]
+python-dotenv
+geopy

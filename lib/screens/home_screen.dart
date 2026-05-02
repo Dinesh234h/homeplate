@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
 import '../models/app_models.dart';
@@ -23,7 +24,7 @@ class HomeScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 children: [
-                  _buildMapPlaceholder(),
+                  _buildMap(),
                   _buildSectionHeader('Nearby Cooks', '${state.cooks.length} cooks'),
                   const SizedBox(height: 12),
                   ...state.cooks.map((cook) => _buildCookCard(context, cook)),
@@ -115,31 +116,54 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMapPlaceholder() {
+  Widget _buildMap() {
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
-      height: 130,
+      height: 200,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFE5F0E5), Color(0xFFF5E5DD)],
-        ),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Stack(
-        children: [
-          Center(child: Icon(Icons.map_outlined, color: Colors.black.withValues(alpha: 0.1), size: 64)),
-          const Positioned(
-            top: 40,
-            left: 100,
-            child: CircleAvatar(radius: 15, backgroundColor: AppTheme.primary, child: Text('N', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
-          ),
-          const Positioned(
-            top: 80,
-            right: 80,
-            child: CircleAvatar(radius: 15, backgroundColor: AppTheme.secondary, child: Text('P', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
-          ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            const GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: LatLng(12.9279, 77.6271),
+                zoom: 14.5,
+              ),
+              zoomControlsEnabled: false,
+              myLocationButtonEnabled: false,
+              mapToolbarEnabled: false,
+              compassEnabled: false,
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.2),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.05),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                child: const Icon(Icons.my_location, color: AppTheme.primary, size: 20),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
