@@ -1,8 +1,12 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 
 class AppState extends ChangeNotifier {
-  UserRole? role;
+  List<UserRole> roles = [];
+  UserRole activeRole = UserRole.consumer;
+  User? firebaseUser;
+  bool isAvailable = true;
   String? userName;
   String? userAddress;
   String? phone;
@@ -24,7 +28,27 @@ class AppState extends ChangeNotifier {
   }
 
   void setRole(UserRole newRole) {
-    role = newRole;
+    if (!roles.contains(newRole)) {
+      roles.add(newRole);
+    }
+    activeRole = newRole;
+    notifyListeners();
+  }
+
+  void switchRole(UserRole newRole) {
+    if (roles.contains(newRole)) {
+      activeRole = newRole;
+      notifyListeners();
+    }
+  }
+
+  void setFirebaseUser(User? user) {
+    firebaseUser = user;
+    notifyListeners();
+  }
+
+  void setAvailability(bool val) {
+    isAvailable = val;
     notifyListeners();
   }
 

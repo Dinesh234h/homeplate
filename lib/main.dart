@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
@@ -9,8 +10,16 @@ import 'screens/home_screen.dart';
 import 'screens/cook_dashboard.dart';
 import 'screens/cart_screen.dart';
 import 'screens/tracking_screen.dart';
+import 'screens/profile_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint("Firebase initialization failed: $e");
+    debugPrint("Please ensure google-services.json is present in android/app/");
+  }
   runApp(
     MultiProvider(
       providers: [
@@ -59,7 +68,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
     Center(child: Text('Subscriptions (Coming Soon)')),
     Center(child: Text('Orders (Coming Soon)')),
     Center(child: Text('Insights (Coming Soon)')),
-    Center(child: Text('Profile (Coming Soon)')),
+    ProfileScreen(),
   ];
 
   @override

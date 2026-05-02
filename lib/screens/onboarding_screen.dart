@@ -19,11 +19,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final TextEditingController _addressController = TextEditingController();
 
   void _next() {
-    if (_currentStep < 2) {
+    if (_currentStep < 3) {
       _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     } else {
       context.read<AppState>().setUserInfo(_nameController.text, _addressController.text);
-      if (context.read<AppState>().role == UserRole.cook) {
+      if (context.read<AppState>().activeRole == UserRole.cook) {
         Navigator.pushReplacementNamed(context, '/cook-home');
       } else {
         Navigator.pushReplacementNamed(context, '/home');
@@ -48,7 +48,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           },
         ),
         title: Row(
-          children: List.generate(3, (index) => Expanded(
+          children: List.generate(4, (index) => Expanded(
             child: Container(
               height: 4,
               margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -68,13 +68,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           _buildNameStep(),
           _buildDietStep(),
           _buildCuisineStep(),
+          _buildPreferenceStep(),
         ],
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(24.0),
         child: ElevatedButton(
           onPressed: _isNextEnabled() ? _next : null,
-          child: Text(_currentStep == 2 ? 'Finish' : 'Next'),
+          child: Text(_currentStep == 3 ? 'Finish' : 'Next'),
         ),
       ),
     );
@@ -158,7 +159,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildCuisineStep() {
     final state = context.watch<AppState>();
-    final List<String> available = ['North Indian', 'South Indian', 'Punjabi', 'Bengali', 'Andhra', 'Healthy'];
+    final List<String> available = ['North Indian', 'South Indian', 'Punjabi', 'Bengali', 'Andhra', 'Healthy', 'Maharashtrian'];
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -178,8 +179,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 selected: selected,
                 onSelected: (val) {
                   setState(() {
-                    if (val) state.cuisines.add(c);
-                    else state.cuisines.remove(c);
+                    if (val) { state.cuisines.add(c); }
+                    else { state.cuisines.remove(c); }
                   });
                 },
                 selectedColor: AppTheme.primarySoft,
@@ -191,6 +192,56 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100), side: BorderSide(color: selected ? AppTheme.primary : AppTheme.border, width: 2)),
               );
             }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreferenceStep() {
+    final state = context.watch<AppState>();
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Your Taste', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          const Text('Tailor the discovery engine to your vibe.', style: TextStyle(color: AppTheme.textMuted)),
+          const SizedBox(height: 40),
+          
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Spice Level', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(state.spiceLevel < 33 ? 'Mild' : state.spiceLevel < 66 ? 'Medium' : 'Hot', 
+                   style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          Slider(
+            value: state.spiceLevel,
+            onChanged: (v) => setState(() => state.spiceLevel = v),
+            min: 0,
+            max: 100,
+            activeColor: AppTheme.primary,
+          ),
+          const SizedBox(height: 32),
+          
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Budget per meal', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('₹${state.budgetLevel.round()}', 
+                   style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          Slider(
+            value: state.budgetLevel,
+            onChanged: (v) => setState(() => state.budgetLevel = v),
+            min: 40,
+            max: 200,
+            divisions: 16,
+            activeColor: AppTheme.primary,
           ),
         ],
       ),
