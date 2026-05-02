@@ -64,7 +64,6 @@ class MainNavigationWrapper extends StatefulWidget {
 
 class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
   int _selectedIndex = 0;
-  final PageController _pageController = PageController();
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -75,38 +74,15 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
   ];
 
   @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        physics: const NeverScrollableScrollPhysics(), // Prevent swipe to keep it like a standard app
+      body: IndexedStack(
+        index: _selectedIndex,
         children: _screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        onTap: (index) => setState(() => _selectedIndex = index),
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppTheme.primary,
         unselectedItemColor: AppTheme.textLight,

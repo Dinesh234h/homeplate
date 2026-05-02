@@ -71,9 +71,13 @@ class _CartScreenState extends State<CartScreen> {
             children: [
               _buildCookHeader(state),
               const SizedBox(height: 24),
+              _buildAddressSection(state),
+              const SizedBox(height: 24),
               ...state.cart.asMap().entries.map((entry) => _buildCartItem(state, entry.key, entry.value)),
               const SizedBox(height: 24),
               _buildGroupOrderCard(),
+              const SizedBox(height: 24),
+              _buildPaymentSection(state),
               const SizedBox(height: 24),
               _buildPromoSection(),
               const SizedBox(height: 24),
@@ -207,6 +211,86 @@ class _CartScreenState extends State<CartScreen> {
           ),
         ],
       ),
+    );
+  }
+
+    );
+  }
+
+    );
+  }
+
+  Widget _buildAddressSection(AppState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('DELIVERY ADDRESS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.border),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.location_on, color: AppTheme.primary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(state.userAddress ?? 'Select Address', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('Delivering to your door', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () {},
+                child: const Text('CHANGE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentSection(AppState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('PAYMENT METHOD', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.border),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.payment, color: AppTheme.secondary),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('UPI: avi@okaxis', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text('Default Method', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () {},
+                child: const Text('CHANGE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
