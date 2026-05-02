@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
+import '../models/app_models.dart';
 
 class CookDashboard extends StatelessWidget {
   const CookDashboard({super.key});
@@ -13,229 +14,230 @@ class CookDashboard extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(state),
-              _buildEarningsCard(),
-              _buildQuickStats(),
-              _buildNextPickups(),
-              _buildAiSuggestion(),
-              const SizedBox(height: 80), 
+              _buildHeader(context, state),
+              const SizedBox(height: 32),
+              _buildStats(state),
+              const SizedBox(height: 32),
+              _buildOrderSection(context, state),
+              const SizedBox(height: 32),
+              _buildMenuSection(context, state),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppTheme.primary,
-        unselectedItemColor: AppTheme.textLight,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.today), label: 'Today'),
-          BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu), label: 'Menu'),
-          BottomNavigationBarItem(icon: Icon(Icons.psychology), label: 'AI Ideas'),
-          BottomNavigationBarItem(icon: Icon(Icons.trending_up), label: 'Earn'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Me'),
-        ],
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddItemDialog(context),
+        backgroundColor: AppTheme.primary,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Dish', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
 
-  Widget _buildHeader(AppState state) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 24,
-            backgroundColor: AppTheme.primary,
-            child: Text('N', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Good morning, ${state.userName?.split(' ')[0] ?? 'Neha'} 👋', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-              const Text('Tuesday, 27 April', style: TextStyle(fontSize: 13, color: AppTheme.textMuted)),
-            ],
-          ),
-        ],
-      ),
+  Widget _buildHeader(BuildContext context, AppState state) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Welcome back, ${state.userName?.split(' ')[0] ?? 'Chef'}!', 
+                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(state.isAvailable ? 'You are receiving orders' : 'You are currently offline', 
+                 style: TextStyle(color: state.isAvailable ? AppTheme.success : AppTheme.textMuted, fontSize: 13)),
+          ],
+        ),
+        _buildAvailabilityToggle(state),
+      ],
     );
   }
 
-  Widget _buildEarningsCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(20),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppTheme.text,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Today\'s earnings', style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 8),
-          const Text('₹1,240', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          Text(
-            '↑ 18% vs last Tue · ₹14,820 this week',
-            style: TextStyle(color: AppTheme.success.withValues(alpha: 0.9), fontSize: 12, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
+  Widget _buildAvailabilityToggle(AppState state) {
+    return Column(
+      children: [
+        Switch(
+          value: state.isAvailable,
+          onChanged: (val) => state.toggleAvailability(),
+          activeColor: AppTheme.success,
+        ),
+        Text(state.isAvailable ? 'ONLINE' : 'OFFLINE', 
+             style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: state.isAvailable ? AppTheme.success : AppTheme.textMuted)),
+      ],
     );
   }
 
-  Widget _buildQuickStats() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Row(
-        children: [
-          _buildStatBox('0', 'Pending', AppTheme.danger.withValues(alpha: 0.1), AppTheme.danger),
-          const SizedBox(width: 12),
-          _buildStatBox('2', 'Cooking', AppTheme.accent.withValues(alpha: 0.1), AppTheme.accent),
-          const SizedBox(width: 12),
-          _buildStatBox('1', 'Done', AppTheme.bg, AppTheme.textMuted),
-        ],
-      ),
+  Widget _buildStats(AppState state) {
+    return Row(
+      children: [
+        _buildStatCard('Earnings', '₹4,820', Icons.account_balance_wallet, AppTheme.secondary),
+        const SizedBox(width: 16),
+        _buildStatCard('Rating', '4.9', Icons.star, AppTheme.accent),
+        const SizedBox(width: 16),
+        _buildStatCard('Orders', '124', Icons.shopping_bag, AppTheme.primary),
+      ],
     );
   }
 
-  Widget _buildStatBox(String val, String label, Color bg, Color textColor) {
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(16)),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.border),
+        ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(val, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: textColor)),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textMuted)),
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 12),
+            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNextPickups() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Next pickups', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
-          const SizedBox(height: 12),
-          _buildPickupItem('1:00 PM', 'Avi K.', 'Rajma Rice', 'Ready'),
-          _buildPickupItem('1:15 PM', 'Sneha P.', 'Palak Paneer', 'Cooking'),
-        ],
-      ),
+  Widget _buildOrderSection(BuildContext context, AppState state) {
+    final activeOrders = state.orders.where((o) => o.status != 'completed').toList();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Active Orders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            TextButton(onPressed: () {}, child: const Text('View All')),
+          ],
+        ),
+        if (activeOrders.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(child: Text('No active orders', style: TextStyle(color: AppTheme.textMuted))),
+          )
+        else
+          ...activeOrders.map((o) => _buildOrderTile(context, state, o)),
+      ],
     );
   }
 
-  Widget _buildPickupItem(String time, String name, String dish, String status) {
+  Widget _buildOrderTile(BuildContext context, AppState state, Order order) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.bg,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.border),
       ),
       child: Row(
         children: [
-          Column(
-            children: [
-              Text(time.split(' ')[0], style: const TextStyle(fontWeight: FontWeight.w800)),
-              Text(time.split(' ')[1], style: const TextStyle(fontSize: 10, color: AppTheme.textMuted)),
-            ],
-          ),
-          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('$name · $dish', style: const TextStyle(fontWeight: FontWeight.w700)),
-                const Text('Less spicy · ₹110', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                Text('Order #${order.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(order.items.map((i) => '${i.qty}x ${i.name}').join(', '), 
+                     style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: status == 'Ready' ? AppTheme.success.withValues(alpha: 0.1) : AppTheme.accent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              status,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: status == 'Ready' ? AppTheme.success : AppTheme.accent,
-              ),
-            ),
-          ),
+          _buildStatusButton(state, order),
         ],
       ),
     );
   }
 
-  Widget _buildAiSuggestion() {
-    return Container(
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.bg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.border, width: 2),
+  Widget _buildStatusButton(AppState state, Order order) {
+    String nextLabel;
+    String nextStatus;
+    Color color;
+
+    switch (order.status) {
+      case 'placed':
+        nextLabel = 'Accept';
+        nextStatus = 'accepted';
+        color = AppTheme.primary;
+        break;
+      case 'accepted':
+        nextLabel = 'Start Cooking';
+        nextStatus = 'cooking';
+        color = AppTheme.accent;
+        break;
+      case 'cooking':
+        nextLabel = 'Mark Ready';
+        nextStatus = 'ready';
+        color = AppTheme.success;
+        break;
+      default:
+        return const Text('READY', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.success));
+    }
+
+    return ElevatedButton(
+      onPressed: () => state.updateStatusPublic(order.id, nextStatus),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(4)),
-                child: const Text('AI Suggestion', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Text('Chole Bhature', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-          const Text('Demand spike Wednesday — Punjabi day in your area.', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildAiMetric('Demand', '14-18 orders'),
-              _buildAiMetric('Profit', '₹62/dish'),
-              _buildAiMetric('Match', '92%'),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {},
-              child: const Text('Add to menu'),
-            ),
-          ),
-        ],
-      ),
+      child: Text(nextLabel, style: const TextStyle(fontSize: 11)),
     );
   }
 
-  Widget _buildAiMetric(String label, String val) {
+  Widget _buildMenuSection(BuildContext context, AppState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textMuted)),
-        Text(val, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        const Text('Your Menu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        // Mock menu for the current cook
+        _buildMenuTile('Rajma + Rice', '₹110', '🍛'),
+        _buildMenuTile('Palak Paneer', '₹140', '🥘'),
       ],
+    );
+  }
+
+  Widget _buildMenuTile(String name, String price, String emoji) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Container(
+        width: 45,
+        height: 45,
+        decoration: BoxDecoration(color: AppTheme.bg, borderRadius: BorderRadius.circular(10)),
+        child: Center(child: Text(emoji, style: const TextStyle(fontSize: 24))),
+      ),
+      title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+      subtitle: Text(price, style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+      trailing: const Icon(Icons.edit_outlined, size: 20),
+    );
+  }
+
+  void _showAddItemDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add New Dish'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(decoration: InputDecoration(hintText: 'Dish Name')),
+            SizedBox(height: 12),
+            TextField(decoration: InputDecoration(hintText: 'Price (₹)')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Save')),
+        ],
+      ),
     );
   }
 }

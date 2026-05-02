@@ -11,6 +11,9 @@ import 'screens/cook_dashboard.dart';
 import 'screens/cart_screen.dart';
 import 'screens/tracking_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/subscription_screen.dart';
+import 'screens/social_feed_screen.dart';
+import 'screens/order_history_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +21,6 @@ void main() async {
     await Firebase.initializeApp();
   } catch (e) {
     debugPrint("Firebase initialization failed: $e");
-    debugPrint("Please ensure google-services.json is present in android/app/");
   }
   runApp(
     MultiProvider(
@@ -62,22 +64,49 @@ class MainNavigationWrapper extends StatefulWidget {
 
 class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
   int _selectedIndex = 0;
+  final PageController _pageController = PageController();
 
-  static const List<Widget> _screens = [
-    HomeScreen(),
-    Center(child: Text('Subscriptions (Coming Soon)')),
-    Center(child: Text('Orders (Coming Soon)')),
-    Center(child: Text('Insights (Coming Soon)')),
-    ProfileScreen(),
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const SubscriptionScreen(),
+    const SocialFeedScreen(),
+    const OrderHistoryScreen(),
+    const ProfileScreen(),
   ];
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        physics: const NeverScrollableScrollPhysics(), // Prevent swipe to keep it like a standard app
+        children: _screens,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
+        onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppTheme.primary,
         unselectedItemColor: AppTheme.textLight,
@@ -86,8 +115,8 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined), activeIcon: Icon(Icons.calendar_today), label: 'Plans'),
+          BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), activeIcon: Icon(Icons.explore), label: 'Discover'),
           BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_outlined), activeIcon: Icon(Icons.shopping_bag), label: 'Orders'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Insights'),
           BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Me'),
         ],
       ),

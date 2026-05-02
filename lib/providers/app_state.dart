@@ -1,8 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../models/app_models.dart';
+import '../services/matching_service.dart';
+import '../services/order_service.dart';
 
 class AppState extends ChangeNotifier {
+  // Services
+  final MatchingService _matchingService = MatchingService();
+  final OrderService _orderService = OrderService();
+
   List<UserRole> roles = [];
   UserRole activeRole = UserRole.consumer;
   User? firebaseUser;
@@ -10,6 +16,15 @@ class AppState extends ChangeNotifier {
   String? userName;
   String? userAddress;
   String? phone;
+  String selectedFilter = 'All';
+  
+  // Advanced State for "Working Buttons"
+  List<String> savedAddresses = ["Home: Flat 402, Bellandur", "Work: Prestige Tech Park"];
+  List<String> paymentMethods = ["UPI: avi@okaxis", "Visa ending in 4242"];
+  double walletBalance = 240.0;
+  List<String> likedPosts = [];
+
+  // Preferences
   List<String> allergies = [];
   List<String> healthGoals = [];
   List<String> cuisines = [];
@@ -17,20 +32,77 @@ class AppState extends ChangeNotifier {
   double spiceLevel = 50.0;
   double budgetLevel = 40.0;
 
+  // Data
   List<Cook> cooks = [];
   List<CartItem> cart = [];
   List<Order> orders = [];
   Order? currentOrder;
-  double wallet = 240.0;
+  bool isLoading = false;
 
   AppState() {
     _initMockData();
   }
 
-  void setRole(UserRole newRole) {
-    if (!roles.contains(newRole)) {
-      roles.add(newRole);
+  /// F03/F04: Connected Hyperlocal Discovery
+  void setFilter(String filter) {
+    selectedFilter = filter;
+    notifyListeners();
+  }
+
+  List<Cook> get filteredCooks {
+    List<Cook> results = List.from(cooks);
+    if (selectedFilter == 'Pure Veg') {
+      results = results.where((c) => c.veg).toList();
+    } else if (selectedFilter == 'Top Rated') {
+      results = results.where((c) => c.rating >= 4.8).toList();
+    } else if (selectedFilter == 'Under ₹120') {
+      results = results.where((c) => c.menu.any((d) => d.price < 120)).toList();
     }
+    return results;
+  }
+
+  /// Button Logic: Addresses & Payments
+  void addAddress(String addr) {
+    savedAddresses.add(addr);
+    notifyListeners();
+  }
+
+  void toggleLike(String postId) {
+    if (likedPosts.contains(postId)) {
+      likedPosts.remove(postId);
+    } else {
+      likedPosts.add(postId);
+    }
+    notifyListeners();
+  }
+
+  /// F06: Connected Atomic Ordering
+  Future<void> placeOrderReal(Cook cook, String slot) async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      final result = await _orderService.reserveSlot(
+        cookId: cook.id.toString(),
+        slotId: "evening_slot",
+        quantity: 1,
+      );
+
+      if (result['success']) {
+        final subtotal = cart.fold<double>(0, (sum, item) => sum + (item.price * item.qty));
+        await _orderService.logCommission(cook.id.toString(), subtotal);
+        placeOrder(cook, slot);
+      }
+    } catch (e) {
+      debugPrint("Order Error: $e");
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void setRole(UserRole newRole) {
+    if (!roles.contains(newRole)) roles.add(newRole);
     activeRole = newRole;
     notifyListeners();
   }
@@ -55,6 +127,9 @@ class AppState extends ChangeNotifier {
   void setUserInfo(String name, String address) {
     userName = name;
     userAddress = address;
+    if (address.isNotEmpty && !savedAddresses.contains(address)) {
+      savedAddresses.insert(0, "Current: $address");
+    }
     notifyListeners();
   }
 
@@ -67,7 +142,6 @@ class AppState extends ChangeNotifier {
     if (cart.isNotEmpty && cart[0].cookId != cook.id) {
       cart.clear();
     }
-    
     final existingIndex = cart.indexWhere((item) => item.dishId == dish.id);
     if (existingIndex >= 0) {
       cart[existingIndex].qty += qty;
@@ -87,9 +161,7 @@ class AppState extends ChangeNotifier {
 
   void updateCartQty(int index, int delta) {
     cart[index].qty += delta;
-    if (cart[index].qty <= 0) {
-      cart.removeAt(index);
-    }
+    if (cart[index].qty <= 0) cart.removeAt(index);
     notifyListeners();
   }
 
@@ -113,13 +185,20 @@ class AppState extends ChangeNotifier {
       placedAt: DateTime.now().millisecondsSinceEpoch,
       customerName: userName ?? 'Customer',
     );
-    
     orders.insert(0, order);
     currentOrder = order;
     cart.clear();
     notifyListeners();
-    
     _simulateOrderProgress(order.id);
+  }
+
+  void updateStatusPublic(int orderId, String status) {
+    _updateOrderStatus(orderId, status);
+  }
+
+  void toggleAvailability() {
+    isAvailable = !isAvailable;
+    notifyListeners();
   }
 
   void _simulateOrderProgress(int orderId) {
@@ -132,9 +211,7 @@ class AppState extends ChangeNotifier {
     final index = orders.indexWhere((o) => o.id == orderId);
     if (index >= 0) {
       orders[index].status = status;
-      if (currentOrder?.id == orderId) {
-        currentOrder!.status = status;
-      }
+      if (currentOrder?.id == orderId) currentOrder!.status = status;
       notifyListeners();
     }
   }
