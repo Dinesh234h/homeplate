@@ -4,7 +4,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
 import '../models/app_models.dart';
-import 'dish_detail_screen.dart';
 import 'cook_menu_screen.dart';
 
 class HomeScreen extends StatelessWidget {

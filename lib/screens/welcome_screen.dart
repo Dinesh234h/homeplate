@@ -80,7 +80,7 @@ class WelcomeScreen extends StatelessWidget {
                       Colors.white,
                       () {
                         context.read<AppState>().setRole(UserRole.cook);
-                        Navigator.pushNamed(context, '/login');
+                        Navigator.pushNamed(context, '/cook-login');
                       },
                       isOutline: true,
                     ),

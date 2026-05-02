@@ -91,7 +91,6 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildCookHeader(AppState state) {
-    if (state.cart.isEmpty) return const SizedBox.shrink();
     final cookId = state.cart[0].cookId;
     final cook = state.cooks.firstWhere((c) => c.id == cookId);
     return Container(
@@ -225,7 +224,7 @@ class _CartScreenState extends State<CartScreen> {
             ],
           ),
           const SizedBox(width: 16),
-          Text('₹${(item.price * item.qty).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w800)),
+          Text('₹${item.price * item.qty}', style: const TextStyle(fontWeight: FontWeight.w800)),
         ],
       ),
     );
@@ -421,11 +420,11 @@ class _CartScreenState extends State<CartScreen> {
       children: [
         const Text('BILL SUMMARY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
         const SizedBox(height: 12),
-        _buildSummaryRow('Subtotal', '₹${subtotal.toStringAsFixed(0)}'),
-        if (_discount > 0) _buildSummaryRow('Promo Discount', '-₹${_discount.toStringAsFixed(0)}', color: AppTheme.secondary),
+        _buildSummaryRow('Subtotal', '₹$subtotal'),
+        if (_discount > 0) _buildSummaryRow('Promo Discount', '-₹$_discount', color: AppTheme.secondary),
         _buildSummaryRow('Delivery (Self Pickup)', '₹0'),
         const Divider(height: 24),
-        _buildSummaryRow('Grand Total', '₹${grandTotal.toStringAsFixed(0)}', isTotal: true),
+        _buildSummaryRow('Grand Total', '₹$grandTotal', isTotal: true),
       ],
     );
   }
@@ -467,7 +466,7 @@ class _CartScreenState extends State<CartScreen> {
               const SizedBox(width: 8),
               const Text('·'),
               const SizedBox(width: 8),
-              Text('₹${grandTotal.toStringAsFixed(0)}'),
+              Text('₹$grandTotal'),
             ],
           ),
         ),
@@ -477,11 +476,10 @@ class _CartScreenState extends State<CartScreen> {
 
   void _placeOrder(BuildContext context, AppState state, double grandTotal) async {
     try {
-      final cookId = state.cart[0].cookId;
-      final cook = state.cooks.firstWhere((c) => c.id == cookId);
+      final cook = state.cooks.firstWhere((c) => c.id == state.cart[0].cookId);
       await state.placeOrderReal(cook, 'Today, 1:00 PM');
       
-      if (!context.mounted) return;
+      if (!mounted) return;
       
       showDialog(
         context: context,
@@ -490,12 +488,10 @@ class _CartScreenState extends State<CartScreen> {
       );
 
       Future.delayed(const Duration(seconds: 3), () {
-        if (!context.mounted) return;
         Navigator.pop(context);
         Navigator.pushReplacementNamed(context, '/tracking');
       });
     } catch (e) {
-      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppTheme.danger),
       );

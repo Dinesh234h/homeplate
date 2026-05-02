@@ -10,128 +10,280 @@ class CookDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    
+    // For demo purposes, we assume this user is Cook ID 0
+    final myCookProfile = state.cooks.firstWhere((c) => c.id == 0);
+    final myOrders = state.orders.where((o) => o.cookId == 0).toList();
+    final earnings = myOrders.where((o) => o.status == 'completed').fold<double>(0, (sum, o) => sum + o.total);
+
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
+          _buildSliverAppBar(context, state, myCookProfile),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStatsRow(earnings, myCookProfile.rating.toString(), myOrders.length.toString()),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('Active Orders', myOrders.where((o) => o.status != 'completed').length.toString()),
+                  const SizedBox(height: 16),
+                  _buildOrderList(context, state, myOrders),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('Your Menu', myCookProfile.menu.length.toString()),
+                  const SizedBox(height: 16),
+                  _buildMenuList(context, state, myCookProfile),
+                  const SizedBox(height: 100),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddDishSheet(context, state, myCookProfile.id),
+        backgroundColor: AppTheme.primary,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('New Dish', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+      ),
+    );
+  }
+
+  Widget _buildSliverAppBar(BuildContext context, AppState state, Cook cook) {
+    return SliverAppBar(
+      expandedHeight: 180,
+      pinned: true,
+      backgroundColor: AppTheme.primary,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppTheme.primary, AppTheme.primary.withValues(alpha: 0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildHeader(context, state),
-              const SizedBox(height: 32),
-              _buildStats(state),
-              const SizedBox(height: 32),
-              _buildOrderSection(context, state),
-              const SizedBox(height: 32),
-              _buildMenuSection(context, state),
+              const SizedBox(height: 20),
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: Colors.white,
+                child: Text(cook.avatar, style: const TextStyle(fontSize: 30)),
+              ),
+              const SizedBox(height: 12),
+              Text(cook.name, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
+              Text(state.isAvailable ? 'ONLINE · Receiving Orders' : 'OFFLINE · Not Visible', 
+                   style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddItemDialog(context),
-        backgroundColor: AppTheme.primary,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Dish', style: TextStyle(fontWeight: FontWeight.bold)),
+      leading: IconButton(
+        icon: const Icon(Icons.swap_horiz, color: Colors.white),
+        onPressed: () {
+          state.switchRole(UserRole.consumer);
+          Navigator.pushReplacementNamed(context, '/home');
+        },
       ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, AppState state) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Welcome back, ${state.userName?.split(' ')[0] ?? 'Chef'}!', 
-                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            Text(state.isAvailable ? 'You are receiving orders' : 'You are currently offline', 
-                 style: TextStyle(color: state.isAvailable ? AppTheme.success : AppTheme.textMuted, fontSize: 13)),
-          ],
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: Switch(
+            value: state.isAvailable,
+            onChanged: (val) => state.toggleAvailability(),
+            activeThumbColor: Colors.white,
+            activeTrackColor: AppTheme.success,
+          ),
         ),
-        _buildAvailabilityToggle(state),
       ],
     );
   }
 
-  Widget _buildAvailabilityToggle(AppState state) {
-    return Column(
-      children: [
-        Switch(
-          value: state.isAvailable,
-          onChanged: (val) => state.toggleAvailability(),
-          activeColor: AppTheme.success,
-        ),
-        Text(state.isAvailable ? 'ONLINE' : 'OFFLINE', 
-             style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: state.isAvailable ? AppTheme.success : AppTheme.textMuted)),
-      ],
-    );
-  }
-
-  Widget _buildStats(AppState state) {
+  Widget _buildStatsRow(double earnings, String rating, String totalOrders) {
     return Row(
       children: [
-        _buildStatCard('Earnings', '₹4,820', Icons.account_balance_wallet, AppTheme.secondary),
-        const SizedBox(width: 16),
-        _buildStatCard('Rating', '4.9', Icons.star, AppTheme.accent),
-        const SizedBox(width: 16),
-        _buildStatCard('Orders', '124', Icons.shopping_bag, AppTheme.primary),
+        _buildStatBox('Earnings', '₹${earnings.round()}', Icons.account_balance_wallet, AppTheme.secondary),
+        const SizedBox(width: 12),
+        _buildStatBox('Rating', rating, Icons.star, AppTheme.accent),
+        const SizedBox(width: 12),
+        _buildStatBox('Orders', totalOrders, Icons.shopping_bag, AppTheme.primary),
       ],
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+  Widget _buildStatBox(String label, String value, IconData icon, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppTheme.border),
+          border: Border.all(color: color.withValues(alpha: 0.1)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 20),
+            Icon(icon, color: color, size: 18),
             const SizedBox(height: 12),
-            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: color)),
+            Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildOrderSection(BuildContext context, AppState state) {
-    final activeOrders = state.orders.where((o) => o.status != 'completed').toList();
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildSectionHeader(String title, String count) {
+    return Row(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Active Orders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {}, child: const Text('View All')),
-          ],
+        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(color: AppTheme.bg, borderRadius: BorderRadius.circular(10)),
+          child: Text(count, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primary)),
         ),
-        if (activeOrders.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Center(child: Text('No active orders', style: TextStyle(color: AppTheme.textMuted))),
-          )
-        else
-          ...activeOrders.map((o) => _buildOrderTile(context, state, o)),
       ],
     );
   }
 
-  Widget _buildOrderTile(BuildContext context, AppState state, Order order) {
+  Widget _buildOrderList(BuildContext context, AppState state, List<Order> orders) {
+    final active = orders.where((o) => o.status != 'completed').toList();
+    if (active.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(color: AppTheme.bg, borderRadius: BorderRadius.circular(20)),
+        child: const Column(
+          children: [
+            Icon(Icons.restaurant, color: AppTheme.textMuted, size: 40),
+            SizedBox(height: 12),
+            Text('No active orders right now', style: TextStyle(color: AppTheme.textMuted, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
+    }
+    return Column(children: active.map((o) => _buildOrderCard(context, state, o)).toList());
+  }
+
+  Widget _buildOrderCard(BuildContext context, AppState state, Order order) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(color: AppTheme.bg, shape: BoxShape.circle),
+                  child: const Center(child: Icon(Icons.person, color: AppTheme.textMuted)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(order.customerName, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                      Text('Order #${order.id} · ${order.items.length} items', style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                    ],
+                  ),
+                ),
+                _buildStatusChip(order.status),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('TOTAL EARNING', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
+                    Text('₹${order.total.round()}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppTheme.success)),
+                  ],
+                ),
+                _buildOrderActions(context, state, order),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    Color color;
+    switch (status) {
+      case 'placed': color = AppTheme.primary; break;
+      case 'accepted': color = AppTheme.secondary; break;
+      case 'cooking': color = AppTheme.accent; break;
+      case 'ready': color = AppTheme.success; break;
+      default: color = AppTheme.textMuted;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+      child: Text(status.toUpperCase(), style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w900)),
+    );
+  }
+
+  Widget _buildOrderActions(BuildContext context, AppState state, Order order) {
+    String label;
+    String next;
+    Color color;
+
+    if (order.status == 'placed') { label = 'ACCEPT'; next = 'accepted'; color = AppTheme.primary; }
+    else if (order.status == 'accepted') { label = 'COOK'; next = 'cooking'; color = AppTheme.secondary; }
+    else if (order.status == 'cooking') { label = 'READY'; next = 'ready'; color = AppTheme.success; }
+    else if (order.status == 'ready') { label = 'COMPLETE'; next = 'completed'; color = AppTheme.accent; }
+    else { return const SizedBox.shrink(); }
+
+    return Row(
+      children: [
+        IconButton(
+          onPressed: () => Navigator.pushNamed(context, '/tracking'),
+          icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primary, size: 20),
+        ),
+        const SizedBox(width: 8),
+        ElevatedButton(
+          onPressed: () => state.updateStatusPublic(order.id, next),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            minimumSize: const Size(0, 36),
+          ),
+          child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMenuList(BuildContext context, AppState state, Cook cook) {
+    return Column(
+      children: cook.menu.map((dish) => _buildDishTile(context, state, cook.id, dish)).toList(),
+    );
+  }
+
+  Widget _buildDishTile(BuildContext context, AppState state, int cookId, Dish dish) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppTheme.bg,
         borderRadius: BorderRadius.circular(16),
@@ -139,104 +291,85 @@ class CookDashboard extends StatelessWidget {
       ),
       child: Row(
         children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            child: Center(child: Text(dish.emoji, style: const TextStyle(fontSize: 24))),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Order #${order.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(order.items.map((i) => '${i.qty}x ${i.name}').join(', '), 
-                     style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                Text(dish.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text('₹${dish.price}', style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 13)),
               ],
             ),
           ),
-          _buildStatusButton(state, order),
+          IconButton(
+            onPressed: () => state.removeDishFromMenu(cookId, dish.id),
+            icon: const Icon(Icons.delete_outline, color: AppTheme.danger, size: 20),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatusButton(AppState state, Order order) {
-    String nextLabel;
-    String nextStatus;
-    Color color;
+  void _showAddDishSheet(BuildContext context, AppState state, int cookId) {
+    final nameController = TextEditingController();
+    final priceController = TextEditingController();
+    final emojiController = TextEditingController(text: '🍲');
 
-    switch (order.status) {
-      case 'placed':
-        nextLabel = 'Accept';
-        nextStatus = 'accepted';
-        color = AppTheme.primary;
-        break;
-      case 'accepted':
-        nextLabel = 'Start Cooking';
-        nextStatus = 'cooking';
-        color = AppTheme.accent;
-        break;
-      case 'cooking':
-        nextLabel = 'Mark Ready';
-        nextStatus = 'ready';
-        color = AppTheme.success;
-        break;
-      default:
-        return const Text('READY', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.success));
-    }
-
-    return ElevatedButton(
-      onPressed: () => state.updateStatusPublic(order.id, nextStatus),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: Text(nextLabel, style: const TextStyle(fontSize: 11)),
-    );
-  }
-
-  Widget _buildMenuSection(BuildContext context, AppState state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Your Menu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 16),
-        // Mock menu for the current cook
-        _buildMenuTile('Rajma + Rice', '₹110', '🍛'),
-        _buildMenuTile('Palak Paneer', '₹140', '🥘'),
-      ],
-    );
-  }
-
-  Widget _buildMenuTile(String name, String price, String emoji) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Container(
-        width: 45,
-        height: 45,
-        decoration: BoxDecoration(color: AppTheme.bg, borderRadius: BorderRadius.circular(10)),
-        child: Center(child: Text(emoji, style: const TextStyle(fontSize: 24))),
-      ),
-      title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text(price, style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
-      trailing: const Icon(Icons.edit_outlined, size: 20),
-    );
-  }
-
-  void _showAddItemDialog(BuildContext context) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New Dish'),
-        content: const Column(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(decoration: InputDecoration(hintText: 'Dish Name')),
-            SizedBox(height: 12),
-            TextField(decoration: InputDecoration(hintText: 'Price (₹)')),
+            const Text('Add New Dish', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 24),
+            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Dish Name', hintText: 'e.g. Special Paneer Thali')),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(child: TextField(controller: priceController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price', prefixText: '₹ '))),
+                const SizedBox(width: 16),
+                Expanded(child: TextField(controller: emojiController, decoration: const InputDecoration(labelText: 'Emoji'))),
+              ],
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.isNotEmpty && priceController.text.isNotEmpty) {
+                  final newDish = Dish(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    name: nameController.text,
+                    price: double.parse(priceController.text),
+                    emoji: emojiController.text,
+                    desc: 'Freshly prepared home cooked meal',
+                    rating: 5.0,
+                    orders: 0,
+                    veg: true,
+                    bg: '#FFFFFF',
+                    hbg: '',
+                    ingredients: '',
+                    allergens: [],
+                    nutri: [],
+                  );
+                  state.addDishToMenu(cookId, newDish);
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Add to Menu'),
+            ),
+            const SizedBox(height: 40),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Save')),
-        ],
       ),
     );
   }

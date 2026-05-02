@@ -24,7 +24,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
     final order = state.currentOrder;
 
     if (order == null) {
-      return const Scaffold(body: Center(child: Text('No active order')));
+      return Scaffold(
+        appBar: AppBar(title: const Text('Order Tracking')),
+        body: const Center(child: Text('No active order found.')),
+      );
     }
 
     return Scaffold(
@@ -38,7 +41,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
         leading: IconButton(icon: const Icon(Icons.arrow_back_ios, size: 20), onPressed: () => Navigator.pop(context)),
         actions: [
           IconButton(
-            onPressed: () => _showCallDialog(context, order.cookName),
+            onPressed: () => _showCallUI(context, order.cookName),
             icon: const Icon(Icons.phone_in_talk, color: AppTheme.success),
           ),
           const SizedBox(width: 8),
@@ -193,21 +196,53 @@ class _TrackingScreenState extends State<TrackingScreen> {
     );
   }
 
-  void _showCallDialog(BuildContext context, String name) {
-    showDialog(
+  void _showCallUI(BuildContext context, String name) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Call $name?'),
-        content: Text('Contact your neighbor chef directly to coordinate pickup.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
-            child: const Text('Call Now'),
-          ),
-        ],
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(32),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircleAvatar(radius: 40, backgroundColor: AppTheme.bg, child: Icon(Icons.person, size: 40, color: AppTheme.primary)),
+            const SizedBox(height: 16),
+            Text('Calling $name...', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('+91 98XXX XXXXX', style: TextStyle(color: AppTheme.textMuted)),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildCallAction(Icons.mic_off, 'Mute', Colors.grey),
+                _buildCallAction(Icons.call_end, 'End', AppTheme.danger, onTap: () => Navigator.pop(context)),
+                _buildCallAction(Icons.volume_up, 'Speaker', Colors.grey),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildCallAction(IconData icon, String label, Color color, {VoidCallback? onTap}) {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: Icon(icon, color: Colors.white),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+      ],
     );
   }
 }

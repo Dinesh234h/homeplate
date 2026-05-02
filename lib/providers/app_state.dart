@@ -1,12 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../models/app_models.dart';
-import '../services/matching_service.dart';
 import '../services/order_service.dart';
 
 class AppState extends ChangeNotifier {
   // Services
-  final MatchingService _matchingService = MatchingService();
   final OrderService _orderService = OrderService();
 
   List<UserRole> roles = [];
@@ -23,8 +21,12 @@ class AppState extends ChangeNotifier {
   List<String> savedAddresses = ["Home: Flat 402, Bellandur", "Work: Prestige Tech Park"];
   List<String> paymentMethods = ["UPI: avi@okaxis", "Visa ending in 4242", "Cash on Delivery (COD)"];
   String selectedPayment = "UPI: avi@okaxis";
-  double walletBalance = 240.0;
+  double walletBalance = 500.0;
   List<String> likedPosts = [];
+  
+  // Plans State
+  String? activePlanName = "Daily Lunch Box";
+  DateTime? planDueDate = DateTime.now().add(const Duration(days: 15));
 
   // Preferences
   List<String> allergies = [];
@@ -50,7 +52,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// F03/F04: Connected Hyperlocal Discovery
   void setFilter(String filter) {
     selectedFilter = filter;
     notifyListeners();
@@ -73,7 +74,6 @@ class AppState extends ChangeNotifier {
     return results;
   }
 
-  /// Button Logic: Addresses & Payments
   void addAddress(String addr) {
     savedAddresses.add(addr);
     notifyListeners();
@@ -99,12 +99,43 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// F06: Connected Atomic Ordering
+  void subscribeToPlan(String plan) {
+    activePlanName = plan;
+    planDueDate = DateTime.now().add(const Duration(days: 30));
+    notifyListeners();
+  }
+
+  void reorder(Order order) {
+    cart.clear();
+    for (var item in order.items) {
+      cart.add(CartItem(
+        cookId: item.cookId,
+        dishId: item.dishId,
+        name: item.name,
+        emoji: item.emoji,
+        bg: item.bg,
+        price: item.price,
+        qty: item.qty,
+      ));
+    }
+    notifyListeners();
+  }
+
   Future<void> placeOrderReal(Cook cook, String slot) async {
     isLoading = true;
     notifyListeners();
 
     try {
+      final subtotal = cart.fold<double>(0, (sum, item) => sum + (item.price * item.qty));
+      
+      if (selectedPayment.contains('Wallet')) {
+        if (walletBalance >= subtotal) {
+          walletBalance -= subtotal;
+        } else {
+          throw Exception("Insufficient Wallet Balance");
+        }
+      }
+
       final result = await _orderService.reserveSlot(
         cookId: cook.id.toString(),
         slotId: "evening_slot",
@@ -112,12 +143,12 @@ class AppState extends ChangeNotifier {
       );
 
       if (result['success']) {
-        final subtotal = cart.fold<double>(0, (sum, item) => sum + (item.price * item.qty));
         await _orderService.logCommission(cook.id.toString(), subtotal);
         placeOrder(cook, slot);
       }
     } catch (e) {
       debugPrint("Order Error: $e");
+      rethrow;
     } finally {
       isLoading = false;
       notifyListeners();
@@ -142,8 +173,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setAvailability(bool val) {
-    isAvailable = val;
+  void setPhone(String p) {
+    phone = p;
     notifyListeners();
   }
 
@@ -162,9 +193,31 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setPhone(String p) {
-    phone = p;
-    notifyListeners();
+  void addDishToMenu(int cookId, Dish dish) {
+    final cookIndex = cooks.indexWhere((c) => c.id == cookId);
+    if (cookIndex >= 0) {
+      cooks[cookIndex].menu.add(dish);
+      notifyListeners();
+    }
+  }
+
+  void updateDishInMenu(int cookId, String dishId, Dish updatedDish) {
+    final cookIndex = cooks.indexWhere((c) => c.id == cookId);
+    if (cookIndex >= 0) {
+      final dishIndex = cooks[cookIndex].menu.indexWhere((d) => d.id == dishId);
+      if (dishIndex >= 0) {
+        cooks[cookIndex].menu[dishIndex] = updatedDish;
+        notifyListeners();
+      }
+    }
+  }
+
+  void removeDishFromMenu(int cookId, String dishId) {
+    final cookIndex = cooks.indexWhere((c) => c.id == cookId);
+    if (cookIndex >= 0) {
+      cooks[cookIndex].menu.removeWhere((d) => d.id == dishId);
+      notifyListeners();
+    }
   }
 
   void addToCart(Cook cook, Dish dish, int qty) {
