@@ -26,9 +26,9 @@ class HomeScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 children: [
-                   _buildImpactCard(),
+                  _buildImpactCard(state),
                   const SizedBox(height: 16),
-                  _buildAIPlannerCard(context),
+                  _buildAIPlannerCard(context, state),
                   const SizedBox(height: 16),
                   _buildMap(),
                   _buildSectionHeader('Nearby Cooks', '${cooks.length} kitchens found'),
@@ -173,7 +173,9 @@ class HomeScreen extends StatelessWidget {
           hintText: 'Search for dishes or cooks',
           prefixIcon: const Icon(Icons.search, color: AppTheme.textMuted),
           fillColor: AppTheme.bg,
+          filled: true,
           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.border)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.primary)),
         ),
       ),
     );
@@ -272,133 +274,86 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildImpactCard() {
+  Widget _buildImpactCard(AppState state) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.eco, color: Colors.green, size: 24),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Local Impact', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green)),
-                Text('You saved 1.2kg CO2 this week by eating local!', style: TextStyle(fontSize: 11, color: Colors.black54)),
-              ],
-            ),
-          ),
-          TextButton(onPressed: () {}, child: const Text('View', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green))),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSurpriseFab(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎲 Finding a mystery meal from a Top Cook...'),
-            backgroundColor: AppTheme.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      },
-      backgroundColor: AppTheme.text,
-      icon: const Text('🎁', style: TextStyle(fontSize: 18)),
-      label: const Text('Surprise Me', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, String count) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-        Text(count, style: const TextStyle(fontSize: 13, color: AppTheme.textMuted)),
-      ],
-    );
-  }
-
-  Widget _buildAIPlannerCard(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A1A2E), Colors.black],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppTheme.primary,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(color: const Color(0xFF1A1A2E).withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 10)),
+        boxShadow: [BoxShadow(color: AppTheme.primary.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 10))],
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('IMPACT CREATED', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+          SizedBox(height: 8),
+          Text('1,240 Meals Served', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+          SizedBox(height: 4),
+          Text('in your neighborhood this month', style: TextStyle(color: Colors.white60, fontSize: 13)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAIPlannerCard(BuildContext context, AppState state) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.border),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AIMealPlannerScreen())),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AIMealPlannerScreen())),
           borderRadius: BorderRadius.circular(24),
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                Expanded(
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(color: AppTheme.primarySoft, borderRadius: BorderRadius.circular(16)),
+                  child: const Center(child: Text('🤖', style: TextStyle(fontSize: 28))),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: AppTheme.accent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.auto_awesome, color: AppTheme.accent, size: 12),
-                            SizedBox(width: 4),
-                            Text('AI POWERED', style: TextStyle(color: AppTheme.accent, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text('What should you eat today?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
-                      const SizedBox(height: 4),
-                      const Text('Get a personalized meal suggestion based on your goals.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                      Text('AI MEAL PLANNER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.primary, letterSpacing: 1)),
+                      SizedBox(height: 4),
+                      Text('What should you eat today?', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Colors.white24, size: 32),
+                const Icon(Icons.chevron_right, color: AppTheme.primary),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, String subtitle) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        Text(subtitle, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+      ],
     );
   }
 
   Widget _buildCookCard(BuildContext context, Cook cook) {
     return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CookMenuScreen(cook: cook),
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(16),
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CookMenuScreen(cook: cook))),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.border),
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.border))),
         child: Row(
           children: [
             Container(
@@ -411,24 +366,6 @@ class HomeScreen extends StatelessWidget {
               child: Center(child: Text(cook.avatar, style: const TextStyle(fontSize: 28))),
             ),
             const SizedBox(width: 12),
-            SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: _buildAIPlannerCard(context),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Top Rated Kitchens', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-                  TextButton(onPressed: () {}, child: const Text('View All', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold))),
-                ],
-              ),
-            ),
-          ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -471,6 +408,15 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSurpriseFab(BuildContext context) {
+    return FloatingActionButton.extended(
+      onPressed: () {},
+      backgroundColor: AppTheme.text,
+      label: const Text('SURPRISE ME!', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
+      icon: const Icon(Icons.auto_awesome),
     );
   }
 }

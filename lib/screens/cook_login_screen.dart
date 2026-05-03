@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
-import '../theme/app_theme.dart';
 import '../models/app_models.dart';
-import '../services/auth_service.dart';
 
 class CookLoginScreen extends StatefulWidget {
   const CookLoginScreen({super.key});
@@ -13,260 +11,159 @@ class CookLoginScreen extends StatefulWidget {
 }
 
 class _CookLoginScreenState extends State<CookLoginScreen> {
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _kitchenController = TextEditingController();
-  final List<TextEditingController> _otpControllers = List.generate(4, (_) => TextEditingController());
-  bool _otpSent = false;
-  bool _isLoading = false;
-  String? _verificationId;
-  final AuthService _authService = AuthService();
+  final _formKey = GlobalKey<FormState>();
+  final nameController = TextEditingController();
+  final phoneController = TextEditingController();
+  final addressController = TextEditingController();
+  final otpController = TextEditingController();
+  bool showOtp = false;
 
-  void _sendOtp() async {
-    if (_phoneController.text.length == 10) {
-      int? firstDigit = int.tryParse(_phoneController.text[0]);
+  void _handleSubmit() {
+    if (!_formKey.currentState!.validate()) return;
+    
+    if (!showOtp) {
+      int? firstDigit = int.tryParse(phoneController.text[0]);
       if (firstDigit != null && firstDigit < 6) {
-        _showError('the number is wrong');
-        return;
-      }
-
-      setState(() => _isLoading = true);
-      
-      try {
-        await _authService.verifyPhone(
-          phoneNumber: '+91${_phoneController.text}',
-          onCodeSent: (verificationId, resendToken) {
-            if (!mounted) return;
-            setState(() {
-              _otpSent = true;
-              _verificationId = verificationId;
-              _isLoading = false;
-            });
-          },
-          onVerificationFailed: (e) {
-            if (!mounted) return;
-            setState(() => _isLoading = false);
-            _showError('Verification failed: ${e.message}');
-          },
-          onVerificationCompleted: (credential) async {},
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('the number is wrong'),
+            backgroundColor: Colors.red,
+          ),
         );
-      } catch (e) {
-        if (!mounted) return;
-        setState(() {
-          _otpSent = true;
-          _verificationId = "MOCK_VERIFICATION_ID";
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _verifyOtp() async {
-    String enteredOtp = _otpControllers.map((c) => c.text).join();
-    if (enteredOtp.length == 4) {
-      setState(() => _isLoading = true);
-      
-      if (_verificationId == "MOCK_VERIFICATION_ID") {
-        await Future.delayed(const Duration(seconds: 1));
-        if (enteredOtp == "1234") {
-          _onSuccess();
-        } else {
-          _showError('wrong otp');
-          setState(() => _isLoading = false);
-        }
         return;
       }
-
-      final result = await _authService.signInWithOTP(_verificationId!, enteredOtp);
-      if (result?.user != null) {
-        _onSuccess();
-      } else {
-        _showError('wrong otp');
-        setState(() => _isLoading = false);
+      setState(() => showOtp = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('OTP sent to your number')),
+      );
+    } else {
+      if (otpController.text != "1234") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('wrong otp'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      context.read<AppState>().setRole(UserRole.cook);
+      if (context.mounted) {
+        context.read<AppState>().setPhone(phoneController.text);
+        context.read<AppState>().setUserInfo(nameController.text, addressController.text);
+        Navigator.pushReplacementNamed(context, '/cook-home');
       }
     }
   }
 
-  void _onSuccess() {
-    final state = context.read<AppState>();
-    state.setUserInfo(_kitchenController.text.isEmpty ? 'Chef Neha' : _kitchenController.text, '123, Kitchen Street');
-    state.setRole(UserRole.cook);
-    state.switchRole(UserRole.cook);
-    Navigator.pushReplacementNamed(context, '/cook-home');
-  }
-
-  void _showError(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: AppTheme.danger),
-    );
+  @override
+  void dispose() {
+    nameController.dispose();
+    phoneController.dispose();
+    addressController.dispose();
+    otpController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.1,
-              child: Image.network(
-                'https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2070&auto=format&fit=crop',
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 40),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, color: Colors.black),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 80),
+                const Text('Chef Partner', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange, letterSpacing: 2)),
+                const SizedBox(height: 8),
+                const Text('Welcome to\nHomePlate', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.black, height: 1.1)),
+                const SizedBox(height: 48),
+                
+                // Name Field
+                _buildLabel('KITCHEN NAME'),
+                TextFormField(
+                  controller: nameController,
+                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  decoration: _inputDecoration(Icons.restaurant_outlined, 'e.g. Grandma\'s Kitchen'),
+                  validator: (v) => v!.isEmpty ? 'Please enter kitchen name' : null,
+                ),
+                const SizedBox(height: 24),
+
+                // Phone Field
+                _buildLabel('MOBILE NUMBER'),
+                TextFormField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  decoration: _inputDecoration(Icons.phone_android_outlined, '10-digit number'),
+                  validator: (v) => (v == null || v.length != 10) ? 'Enter valid 10-digit number' : null,
+                ),
+                const SizedBox(height: 24),
+
+                // Address Field
+                _buildLabel('KITCHEN ADDRESS'),
+                TextFormField(
+                  controller: addressController,
+                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  decoration: _inputDecoration(Icons.location_on_outlined, 'Full address for deliveries'),
+                  validator: (v) => v!.isEmpty ? 'Please enter address' : null,
+                ),
+                const SizedBox(height: 24),
+
+                if (showOtp) ...[
+                  _buildLabel('ENTER OTP'),
+                  TextFormField(
+                    controller: otpController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, letterSpacing: 8),
+                    textAlign: TextAlign.center,
+                    decoration: _inputDecoration(Icons.lock_outline, 'XXXX'),
+                    validator: (v) => (v == null || v.length != 4) ? 'Enter 4-digit OTP' : null,
                   ),
-                  const SizedBox(height: 40),
-                  const Icon(Icons.restaurant_menu, color: AppTheme.primary, size: 48),
-                  const SizedBox(height: 16),
-                  const Text('Chef Partner', style: TextStyle(color: Colors.black, fontSize: 32, fontWeight: FontWeight.w900)),
-                  const Text('Grow your kitchen business with HomePlate.', style: TextStyle(color: AppTheme.textMuted, fontSize: 14)),
-                  const SizedBox(height: 48),
-                  
-                  if (!_otpSent) ...[
-                    _buildInputLabel('KITCHEN NAME'),
-                    _buildTextField(_kitchenController, 'e.g. Grandma\'s Kitchen', Icons.storefront),
-                    const SizedBox(height: 24),
-                    _buildInputLabel('PHONE NUMBER'),
-                    _buildPhoneInput(),
-                  ] else ...[
-                    const Text('Verify OTP', style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text('Enter the 4-digit code sent to ${_phoneController.text}', style: const TextStyle(color: AppTheme.textMuted, fontSize: 13)),
-                    const SizedBox(height: 32),
-                    _buildOtpInput(),
-                  ],
-                  
-                  const SizedBox(height: 60),
-                  _buildPrimaryButton(),
                   const SizedBox(height: 32),
                 ],
-              ),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _handleSubmit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: Text(showOtp ? 'START COOKING' : 'SEND OTP', style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildInputLabel(String label) {
+  Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, left: 4),
-      child: Text(label, style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+      child: Text(text, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black54, letterSpacing: 1.5)),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint, IconData icon) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.bg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: TextField(
-        controller: controller,
-        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: Colors.black.withValues(alpha: 0.3)),
-          prefixIcon: Icon(icon, color: AppTheme.primary, size: 20),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(20),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPhoneInput() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.bg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Row(
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 20, right: 10),
-            child: Text('+91', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
-          ),
-          Expanded(
-            child: TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              maxLength: 10,
-              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
-              decoration: InputDecoration(
-                hintText: 'Phone Number',
-                hintStyle: TextStyle(color: Colors.black.withValues(alpha: 0.3)),
-                counterText: '',
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOtpInput() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(4, (index) => SizedBox(
-        width: 65,
-        height: 65,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppTheme.bg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.border),
-          ),
-          child: TextField(
-            controller: _otpControllers[index],
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            maxLength: 1,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
-            decoration: const InputDecoration(counterText: '', border: InputBorder.none),
-            onChanged: (value) {
-              if (value.isNotEmpty && index < 3) {
-                FocusScope.of(context).nextFocus();
-              }
-              if (_otpControllers.every((c) => c.text.isNotEmpty)) {
-                _verifyOtp();
-              }
-            },
-          ),
-        ),
-      )),
-    );
-  }
-
-  Widget _buildPrimaryButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 64,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : (_otpSent ? _verifyOtp : _sendOtp),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        ),
-        child: _isLoading 
-          ? const CircularProgressIndicator(color: Colors.white)
-          : Text(_otpSent ? 'VERIFY & ENTER' : 'GET OTP', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
-      ),
+  InputDecoration _inputDecoration(IconData icon, String hint) {
+    return InputDecoration(
+      prefixIcon: Icon(icon, color: Colors.black, size: 20),
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.black26, fontWeight: FontWeight.normal),
+      filled: true,
+      fillColor: Colors.grey[100],
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.black, width: 1)),
     );
   }
 }

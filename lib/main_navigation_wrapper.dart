@@ -492,6 +492,7 @@ class _CartScreenState extends State<CartScreen> {
         Navigator.pushReplacementNamed(context, '/tracking');
       });
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppTheme.danger),
       );

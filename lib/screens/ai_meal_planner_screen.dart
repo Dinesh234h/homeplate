@@ -31,13 +31,14 @@ class _AIMealPlannerScreenState extends State<AIMealPlannerScreen> with SingleTi
 
   void _generateSuggestion() async {
     final state = context.read<AppState>();
-    await Future.delayed(const Duration(seconds: 3)); // Simulate AI thinking
+    await Future.delayed(const Duration(seconds: 3)); 
     
-    // Simple logic to "generate" based on state
     final cuisines = state.cuisines.isEmpty ? ['North Indian', 'Healthy'] : state.cuisines;
     final diet = state.diet;
     final spice = state.spiceLevel > 70 ? 'Spicy' : (state.spiceLevel < 30 ? 'Mild' : 'Medium');
-    
+    final allergens = state.allergies.isEmpty ? 'no specific allergens' : state.allergies.join(', ');
+    final goal = state.healthGoals.isEmpty ? 'general wellness' : state.healthGoals[0];
+
     final options = [
       {
         'name': 'Home-style ${cuisines[0]} Platter',
@@ -45,19 +46,19 @@ class _AIMealPlannerScreenState extends State<AIMealPlannerScreen> with SingleTi
         'calories': '${350 + Random().nextInt(200)} kcal',
         'protein': '18g',
         'match': '98%',
-        'why': 'Matches your ${cuisines[0]} preference and ${state.healthGoals.isNotEmpty ? state.healthGoals[0] : 'Healthy Living'} goal.',
+        'why': 'This meal matches your $cuisines preference and is optimized for $goal. It avoids $allergens and strictly follows your $spice spice preference.',
         'emoji': '🍱',
-        'price': '₹${120 + Random().nextInt(100)}',
+        'price': '₹120',
       },
       {
         'name': 'Wholesome ${state.diet.toUpperCase()} Bowl',
-        'desc': 'Tailored for your ${state.healthGoals.isNotEmpty ? state.healthGoals[0] : 'Wellness'} journey. Low oil, high fiber, and perfectly $spice.',
+        'desc': 'Tailored for your $goal journey. Low oil, high fiber, and perfectly $spice.',
         'calories': '${280 + Random().nextInt(100)} kcal',
         'protein': '22g',
         'match': '95%',
-        'why': 'Low budget and fits your ${state.allergies.isEmpty ? 'clean' : 'allergy-safe'} profile.',
+        'why': 'Selected for its high protein content to support $goal. It uses farm-fresh ingredients and respects your $allergens restrictions.',
         'emoji': '🥗',
-        'price': '₹${90 + Random().nextInt(60)}',
+        'price': '₹150',
       }
     ];
 
@@ -71,6 +72,7 @@ class _AIMealPlannerScreenState extends State<AIMealPlannerScreen> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -79,9 +81,9 @@ class _AIMealPlannerScreenState extends State<AIMealPlannerScreen> with SingleTi
           SafeArea(
             child: Column(
               children: [
-                _buildAppBar(),
+                _buildAppBar(state),
                 Expanded(
-                  child: _isGenerating ? _buildLoadingState() : _buildResultState(),
+                  child: _isGenerating ? _buildLoadingState() : _buildResultState(state),
                 ),
               ],
             ),
@@ -112,7 +114,7 @@ class _AIMealPlannerScreenState extends State<AIMealPlannerScreen> with SingleTi
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(AppState state) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Row(
@@ -121,8 +123,8 @@ class _AIMealPlannerScreenState extends State<AIMealPlannerScreen> with SingleTi
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
-          const Expanded(
-            child: Text('AI MEAL PLANNER', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 14)),
+          Expanded(
+            child: Text(state.tr('meal_planner').toUpperCase(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 14)),
           ),
           const SizedBox(width: 48),
         ],
@@ -155,7 +157,7 @@ class _AIMealPlannerScreenState extends State<AIMealPlannerScreen> with SingleTi
     );
   }
 
-  Widget _buildResultState() {
+  Widget _buildResultState(AppState state) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -168,7 +170,7 @@ class _AIMealPlannerScreenState extends State<AIMealPlannerScreen> with SingleTi
           const SizedBox(height: 32),
           _buildWhyCard(),
           const SizedBox(height: 48),
-          _buildActionButtons(),
+          _buildActionButtons(state),
         ],
       ),
     );
@@ -221,7 +223,7 @@ class _AIMealPlannerScreenState extends State<AIMealPlannerScreen> with SingleTi
               children: [
                 const Text('WHY THIS MEAL?', style: TextStyle(color: AppTheme.accent, fontSize: 10, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 4),
-                Text(_suggestion!['why'], style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+                Text(_suggestion!['why'], style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500, height: 1.4)),
               ],
             ),
           ),
@@ -240,19 +242,19 @@ class _AIMealPlannerScreenState extends State<AIMealPlannerScreen> with SingleTi
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(AppState state) {
     return Column(
       children: [
         SizedBox(
           width: double.infinity,
           height: 64,
           child: ElevatedButton(
-            onPressed: _fastCheckout,
+            onPressed: () => _fastCheckout(state),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.accent,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
-            child: const Text('INSTANT ORDER', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 16)),
+            child: Text(state.tr('instant_order').toUpperCase(), style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 16)),
           ),
         ),
         const SizedBox(height: 16),
@@ -265,7 +267,7 @@ class _AIMealPlannerScreenState extends State<AIMealPlannerScreen> with SingleTi
               side: const BorderSide(color: Colors.white24),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
-            child: const Text('EXPLORE NEARBY KITCHENS', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+            child: Text(state.tr('explore_kitchens').toUpperCase(), style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
           ),
         ),
         const SizedBox(height: 16),
@@ -274,18 +276,15 @@ class _AIMealPlannerScreenState extends State<AIMealPlannerScreen> with SingleTi
             setState(() => _isGenerating = true);
             _generateSuggestion();
           },
-          child: const Text('REGENERATE SUGGESTION', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+          child: Text(state.tr('regenerate').toUpperCase(), style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
         ),
       ],
     );
   }
 
-  void _fastCheckout() {
-    final state = context.read<AppState>();
-    // For the demo, we'll pick the first cook and their first dish
+  void _fastCheckout(AppState state) {
     final cook = state.cooks.firstWhere((c) => c.id == 0);
     final dish = cook.menu.first;
-    
     state.addToCart(cook, dish, 1);
     Navigator.pushNamed(context, '/cart');
   }

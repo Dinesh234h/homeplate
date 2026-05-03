@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
 import '../models/app_models.dart';
+import '../widgets/language_selector.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -25,25 +26,25 @@ class ProfileScreen extends StatelessWidget {
                   _buildSectionTitle('Account'),
                   _buildMenuTile(
                     icon: Icons.person_outlined,
-                    title: 'Edit Profile',
+                    title: state.tr('edit_profile'),
                     subtitle: 'Name, Phone, Email',
                     onTap: () => _showEditProfile(context, state),
                   ),
                   _buildMenuTile(
                     icon: Icons.location_on_outlined,
-                    title: 'Saved Addresses',
+                    title: state.tr('saved_addresses'),
                     subtitle: 'Manage your delivery locations',
                     onTap: () => _showSavedAddresses(context, state),
                   ),
                   _buildMenuTile(
                     icon: Icons.restaurant_outlined,
-                    title: 'Meal Preferences',
+                    title: state.tr('meal_prefs'),
                     subtitle: 'Diet, Spice, Allergies & Goals',
                     onTap: () => _showMealPreferences(context, state),
                   ),
                   _buildMenuTile(
                     icon: Icons.payment_outlined,
-                    title: 'Payment Methods',
+                    title: state.tr('pay_methods'),
                     subtitle: state.selectedPayment,
                     onTap: () => _showPaymentMethods(context, state),
                   ),
@@ -51,13 +52,13 @@ class ProfileScreen extends StatelessWidget {
                   _buildSectionTitle('General'),
                   _buildMenuTile(
                     icon: Icons.help_outlined,
-                    title: 'Help & Support',
+                    title: state.tr('help_support'),
                     subtitle: 'FAQs, Contact us',
                     onTap: () => _showHelp(context),
                   ),
                   _buildMenuTile(
                     icon: Icons.description_outlined,
-                    title: 'Terms & Conditions',
+                    title: state.tr('terms_cond'),
                     subtitle: 'Privacy policy, Legal',
                     onTap: () => _showTerms(context),
                   ),
@@ -71,7 +72,7 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     _buildMenuTile(
                       icon: Icons.restaurant_menu,
-                      title: 'Switch to Cook Mode',
+                      title: state.tr('switch_cook'),
                       subtitle: 'Manage your kitchen and orders',
                       onTap: () {
                         state.switchRole(UserRole.cook);
@@ -82,7 +83,7 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 40),
                   TextButton(
                     onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                    child: const Text('LOGOUT', style: TextStyle(color: AppTheme.danger, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                    child: Text(state.tr('logout').toUpperCase(), style: const TextStyle(color: AppTheme.danger, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                   ),
                   const SizedBox(height: 100),
                 ],

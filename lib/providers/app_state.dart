@@ -7,7 +7,7 @@ class AppState extends ChangeNotifier {
   // Services
   final OrderService _orderService = OrderService();
 
-  List<UserRole> roles = [];
+  List<UserRole> roles = [UserRole.consumer];
   UserRole activeRole = UserRole.consumer;
   User? firebaseUser;
   bool isAvailable = true;
@@ -28,13 +28,16 @@ class AppState extends ChangeNotifier {
   String? activePlanName = "Daily Lunch Box";
   DateTime? planDueDate = DateTime.now().add(const Duration(days: 15));
 
-  // Preferences
+  // Preferences (AI Meal Planner)
   List<String> allergies = [];
   List<String> healthGoals = [];
   List<String> cuisines = [];
   String diet = 'veg';
   double spiceLevel = 50.0;
   double budgetLevel = 40.0;
+
+  // AI Meal Planner Result
+  Map<String, dynamic>? aiSuggestion;
 
   // Data
   List<Cook> cooks = [];
@@ -74,87 +77,6 @@ class AppState extends ChangeNotifier {
     return results;
   }
 
-  void addAddress(String addr) {
-    savedAddresses.add(addr);
-    notifyListeners();
-  }
-
-  void updateAddress(int index, String newAddr) {
-    savedAddresses[index] = newAddr;
-    if (userAddress == savedAddresses[index]) userAddress = newAddr;
-    notifyListeners();
-  }
-
-  void setPaymentMethod(String p) {
-    selectedPayment = p;
-    notifyListeners();
-  }
-
-  void toggleLike(String postId) {
-    if (likedPosts.contains(postId)) {
-      likedPosts.remove(postId);
-    } else {
-      likedPosts.add(postId);
-    }
-    notifyListeners();
-  }
-
-  void subscribeToPlan(String plan) {
-    activePlanName = plan;
-    planDueDate = DateTime.now().add(const Duration(days: 30));
-    notifyListeners();
-  }
-
-  void reorder(Order order) {
-    cart.clear();
-    for (var item in order.items) {
-      cart.add(CartItem(
-        cookId: item.cookId,
-        dishId: item.dishId,
-        name: item.name,
-        emoji: item.emoji,
-        bg: item.bg,
-        price: item.price,
-        qty: item.qty,
-      ));
-    }
-    notifyListeners();
-  }
-
-  Future<void> placeOrderReal(Cook cook, String slot) async {
-    isLoading = true;
-    notifyListeners();
-
-    try {
-      final subtotal = cart.fold<double>(0, (sum, item) => sum + (item.price * item.qty));
-      
-      if (selectedPayment.contains('Wallet')) {
-        if (walletBalance >= subtotal) {
-          walletBalance -= subtotal;
-        } else {
-          throw Exception("Insufficient Wallet Balance");
-        }
-      }
-
-      final result = await _orderService.reserveSlot(
-        cookId: cook.id.toString(),
-        slotId: "evening_slot",
-        quantity: 1,
-      );
-
-      if (result['success']) {
-        await _orderService.logCommission(cook.id.toString(), subtotal);
-        placeOrder(cook, slot);
-      }
-    } catch (e) {
-      debugPrint("Order Error: $e");
-      rethrow;
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-  }
-
   void setRole(UserRole newRole) {
     if (!roles.contains(newRole)) roles.add(newRole);
     activeRole = newRole;
@@ -168,6 +90,20 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  void setUserInfo(String name, String address) {
+    userName = name;
+    userAddress = address;
+    int cookIdx = cooks.indexWhere((c) => c.id == 0);
+    if (cookIdx != -1) {
+      cooks[cookIdx].name = name;
+      cooks[cookIdx].addr = address;
+    }
+    if (address.isNotEmpty && !savedAddresses.contains(address)) {
+      savedAddresses.insert(0, address);
+    }
+    notifyListeners();
+  }
+
   void setFirebaseUser(User? user) {
     firebaseUser = user;
     notifyListeners();
@@ -175,6 +111,31 @@ class AppState extends ChangeNotifier {
 
   void setPhone(String p) {
     phone = p;
+    notifyListeners();
+  }
+
+  void updateProfile(String name, String p) {
+    userName = name;
+    phone = p;
+    notifyListeners();
+  }
+
+  void addAddress(String address) {
+    if (address.isNotEmpty && !savedAddresses.contains(address)) {
+      savedAddresses.add(address);
+      notifyListeners();
+    }
+  }
+
+  void updateAddress(int index, String address) {
+    if (index >= 0 && index < savedAddresses.length && address.isNotEmpty) {
+      savedAddresses[index] = address;
+      notifyListeners();
+    }
+  }
+
+  void setPaymentMethod(String method) {
+    selectedPayment = method;
     notifyListeners();
   }
 
@@ -195,61 +156,9 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateProfile(String name, String p) {
-    userName = name;
-    phone = p;
+  void setAiSuggestion(Map<String, dynamic> suggestion) {
+    aiSuggestion = suggestion;
     notifyListeners();
-  }
-
-  void setUserInfo(String name, String address) {
-    userName = name;
-    userAddress = address;
-    int cookIdx = cooks.indexWhere((c) => c.id == 0);
-    if (cookIdx != -1) {
-      final old = cooks[cookIdx];
-      cooks[cookIdx] = Cook(
-        id: old.id,
-        name: name,
-        short: name.split(' ')[0],
-        avatar: old.avatar,
-        tagline: old.tagline,
-        rating: old.rating,
-        ratingCount: old.ratingCount,
-        years: old.years,
-        distance: old.distance,
-        walkMin: old.walkMin,
-        addr: address,
-        c1: old.c1,
-        c2: old.c2,
-        fssai: old.fssai,
-        inspected: old.inspected,
-        top: old.top,
-        cookOfMonth: old.cookOfMonth,
-        veg: old.veg,
-        cuisines: old.cuisines,
-        menu: old.menu,
-      );
-    }
-    if (address.isNotEmpty && !savedAddresses.contains(address)) {
-      savedAddresses.insert(0, address);
-    }
-    notifyListeners();
-  }
-
-  void addDishToMenu(int cookId, Dish dish) {
-    final cookIndex = cooks.indexWhere((c) => c.id == cookId);
-    if (cookIndex >= 0) {
-      cooks[cookIndex].menu.add(dish);
-      notifyListeners();
-    }
-  }
-
-  void removeDishFromMenu(int cookId, String dishId) {
-    final cookIndex = cooks.indexWhere((c) => c.id == cookId);
-    if (cookIndex >= 0) {
-      cooks[cookIndex].menu.removeWhere((d) => d.id == dishId);
-      notifyListeners();
-    }
   }
 
   void addToCart(Cook cook, Dish dish, int qty) {
@@ -279,10 +188,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateStatusPublic(int orderId, String status) {
-    _updateOrderStatus(orderId, status);
-  }
-
   void placeOrder(Cook cook, String slot) {
     final total = cart.fold<double>(0, (sum, item) => sum + (item.price * item.qty));
     final order = Order(
@@ -309,24 +214,76 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> placeOrderReal(Cook cook, String slot) async {
+    isLoading = true;
+    notifyListeners();
+    try {
+      final result = await _orderService.reserveSlot(
+        cookId: cook.id.toString(),
+        slotId: "evening_slot",
+        quantity: 1,
+      );
+      if (result['success']) {
+        placeOrder(cook, slot);
+      }
+    } catch (e) {
+      debugPrint("Order Error: $e");
+      rethrow;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void updateStatusPublic(int orderId, String status) {
+    final index = orders.indexWhere((o) => o.id == orderId);
+    if (index >= 0) {
+      orders[index].status = status;
+      if (currentOrder?.id == orderId) currentOrder = orders[index];
+      notifyListeners();
+    }
+  }
+
   void toggleAvailability() {
     isAvailable = !isAvailable;
     notifyListeners();
   }
 
-  void _updateOrderStatus(int orderId, String status) {
-    final index = orders.indexWhere((o) => o.id == orderId);
+  void addDishToMenu(int cookId, Dish dish) {
+    final index = cooks.indexWhere((c) => c.id == cookId);
     if (index >= 0) {
-      orders[index].status = status;
-      if (currentOrder?.id == orderId) currentOrder!.status = status;
+      cooks[index].menu.add(dish);
       notifyListeners();
     }
+  }
+
+  void removeDishFromMenu(int cookId, String dishId) {
+    final index = cooks.indexWhere((c) => c.id == cookId);
+    if (index >= 0) {
+      cooks[index].menu.removeWhere((d) => d.id == dishId);
+      notifyListeners();
+    }
+  }
+
+  void toggleLike(String postId) {
+    if (likedPosts.contains(postId)) {
+      likedPosts.remove(postId);
+    } else {
+      likedPosts.add(postId);
+    }
+    notifyListeners();
+  }
+
+  void subscribeToPlan(String planName) {
+    activePlanName = planName;
+    planDueDate = DateTime.now().add(const Duration(days: 30));
+    notifyListeners();
   }
 
   void _initMockData() {
     orders = [
       Order(
-        id: 9921,
+        id: 9916,
         cookId: 0,
         cookName: 'Neha\'s Kitchen',
         cookShort: 'Neha',
@@ -335,67 +292,13 @@ class AppState extends ChangeNotifier {
         cookDist: 0.4,
         cookWalk: 5,
         cookAddr: '123, Kitchen Street',
-        items: [CartItem(cookId: 0, dishId: '1', name: 'Butter Chicken', emoji: '🍗', bg: '#FFE0B2', price: 320, qty: 2)],
-        total: 640,
+        items: [CartItem(cookId: 0, dishId: 'd1', name: 'Butter Chicken', emoji: '🍗', bg: '#FFE0B2', price: 320, qty: 1)],
+        total: 320,
         status: 'placed',
-        otp: '4422',
-        slot: 'Lunch (12:30 PM)',
-        placedAt: DateTime.now().subtract(const Duration(minutes: 10)).millisecondsSinceEpoch,
-        customerName: 'Aarav Sharma',
-      ),
-      Order(
-        id: 9922,
-        cookId: 0,
-        cookName: 'Neha\'s Kitchen',
-        cookShort: 'Neha',
-        cookAvatar: '👩‍🍳',
-        cookColors: [Colors.orange, Colors.red],
-        cookDist: 0.4,
-        cookWalk: 5,
-        cookAddr: '123, Kitchen Street',
-        items: [CartItem(cookId: 0, dishId: '2', name: 'Paneer Tikka', emoji: '🧀', bg: '#E8F5E9', price: 280, qty: 1)],
-        total: 280,
-        status: 'preparing',
-        otp: '1133',
-        slot: 'Lunch (12:45 PM)',
-        placedAt: DateTime.now().subtract(const Duration(minutes: 45)).millisecondsSinceEpoch,
-        customerName: 'Ishani Roy',
-      ),
-      Order(
-        id: 9923,
-        cookId: 0,
-        cookName: 'Neha\'s Kitchen',
-        cookShort: 'Neha',
-        cookAvatar: '👩‍🍳',
-        cookColors: [Colors.orange, Colors.red],
-        cookDist: 0.4,
-        cookWalk: 5,
-        cookAddr: '123, Kitchen Street',
-        items: [CartItem(cookId: 0, dishId: '3', name: 'Dal Makhani', emoji: '🍲', bg: '#F3E5F5', price: 220, qty: 3)],
-        total: 660,
-        status: 'ready',
-        otp: '7788',
-        slot: 'Dinner (08:00 PM)',
+        otp: '4321',
+        slot: 'Lunch (Today)',
         placedAt: DateTime.now().subtract(const Duration(hours: 1)).millisecondsSinceEpoch,
-        customerName: 'Vikram Singh',
-      ),
-      Order(
-        id: 9915,
-        cookId: 0,
-        cookName: 'Neha\'s Kitchen',
-        cookShort: 'Neha',
-        cookAvatar: '👩‍🍳',
-        cookColors: [Colors.orange, Colors.red],
-        cookDist: 0.4,
-        cookWalk: 5,
-        cookAddr: '123, Kitchen Street',
-        items: [CartItem(cookId: 0, dishId: '4', name: 'Mixed Veg', emoji: '🥗', bg: '#E1F5FE', price: 180, qty: 2)],
-        total: 360,
-        status: 'completed',
-        otp: '9900',
-        slot: 'Lunch (01:15 PM)',
-        placedAt: DateTime.now().subtract(const Duration(days: 1)).millisecondsSinceEpoch,
-        customerName: 'Sanjana Malhotra',
+        customerName: 'Avi Nash',
       ),
     ];
     cooks = [
@@ -404,15 +307,15 @@ class AppState extends ChangeNotifier {
         name: "Neha's Kitchen",
         short: "Neha",
         avatar: "👩‍🍳",
-        tagline: "Authentic North Indian Home Food",
+        tagline: "Authentic North Indian meals",
         rating: 4.8,
         ratingCount: 124,
-        years: 8,
-        distance: 0.8,
-        walkMin: 10,
-        addr: "Flat 402, Green Glen Layout, Bellandur",
-        c1: const Color(0xFFFF6B47),
-        c2: const Color(0xFFF4B942),
+        years: 5,
+        distance: 0.4,
+        walkMin: 5,
+        addr: "123, Kitchen Street, Bellandur",
+        c1: Colors.orange,
+        c2: Colors.red,
         fssai: true,
         inspected: true,
         top: true,
@@ -422,33 +325,33 @@ class AppState extends ChangeNotifier {
         menu: [
           Dish(
             id: "d1",
-            name: "Rajma + Jeera Rice",
-            desc: "Slow cooked kidney beans in thick gravy with aromatic rice",
-            emoji: "🍛",
-            price: 110,
+            name: "Butter Chicken + Garlic Naan",
+            desc: "Rich creamy tomato gravy with tender chicken",
+            emoji: "🍗",
+            price: 320,
             rating: 4.9,
-            orders: 840,
-            veg: true,
-            bg: "#FFE8E0",
-            hbg: "linear-gradient(135deg, #FF6B47, #F4B942)",
-            ingredients: "Rajma, Basmati Rice, Onion, Tomato, Spices",
+            orders: 850,
+            veg: false,
+            bg: "#FFE0B2",
+            hbg: "linear-gradient(135deg, #FF9966, #FF5E62)",
+            ingredients: "Chicken, Butter, Cream, Spices",
             allergens: ["Dairy"],
-            nutri: [Nutrient("Cal", "420"), Nutrient("Prot", "14g"), Nutrient("Carb", "62g")],
+            nutri: [Nutrient("Cal", "450"), Nutrient("Prot", "24g"), Nutrient("Carb", "30g")],
           ),
           Dish(
             id: "d2",
-            name: "Palak Paneer + 2 Roti",
-            desc: "Fresh spinach puree with soft cottage cheese cubes",
-            emoji: "🥘",
-            price: 140,
+            name: "Paneer Tikka Platter",
+            desc: "Spiced cottage cheese cubes grilled to perfection",
+            emoji: "🧀",
+            price: 280,
             rating: 4.7,
-            orders: 620,
+            orders: 420,
             veg: true,
-            bg: "#E3F0E8",
-            hbg: "linear-gradient(135deg, #2D5F3F, #5DAA75)",
-            ingredients: "Spinach, Paneer, Whole Wheat, Spices",
-            allergens: ["Dairy", "Gluten"],
-            nutri: [Nutrient("Cal", "380"), Nutrient("Prot", "18g"), Nutrient("Carb", "32g")],
+            bg: "#E8F5E9",
+            hbg: "linear-gradient(135deg, #11998e, #38ef7d)",
+            ingredients: "Paneer, Curd, Bell Peppers, Spices",
+            allergens: ["Dairy"],
+            nutri: [Nutrient("Cal", "320"), Nutrient("Prot", "18g"), Nutrient("Carb", "12g")],
           ),
         ],
       ),
@@ -457,7 +360,7 @@ class AppState extends ChangeNotifier {
         name: "Priya's Traditional",
         short: "Priya",
         avatar: "👩",
-        tagline: "South Indian delicacies from my grandmother's recipe",
+        tagline: "South Indian delicacies",
         rating: 4.9,
         ratingCount: 210,
         years: 12,
@@ -476,7 +379,7 @@ class AppState extends ChangeNotifier {
           Dish(
             id: "d3",
             name: "Bisi Bele Bath",
-            desc: "Hot lentil rice with mixed vegetables and special spice mix",
+            desc: "Hot lentil rice with mixed vegetables",
             emoji: "🍚",
             price: 90,
             rating: 4.9,
@@ -484,12 +387,36 @@ class AppState extends ChangeNotifier {
             veg: true,
             bg: "#E3F0E8",
             hbg: "linear-gradient(135deg, #2D5F3F, #5DAA75)",
-            ingredients: "Rice, Lentils, Vegetables, Tamarind, Spices",
+            ingredients: "Rice, Lentils, Vegetables, Spices",
             allergens: [],
             nutri: [Nutrient("Cal", "350"), Nutrient("Prot", "12g"), Nutrient("Carb", "58g")],
           ),
         ],
       ),
     ];
+  }
+
+  String tr(String key) {
+    Map<String, String> en = {
+      'nearby_cooks': 'Nearby Cooks',
+      'kitchens_found': 'kitchens found',
+      'active_orders': 'Active Orders',
+      'upcoming_orders': 'Upcoming',
+      'past_orders': 'Past',
+      'impact_title': 'Impact Created',
+      'meal_planner': 'AI MEAL PLANNER',
+      'delivering_to': 'DELIVERING TO',
+      'logout': 'LOGOUT',
+      'switch_cook': 'Switch to Cook Mode',
+      'switch_user': 'Switch to User Mode',
+      'online_status': 'ONLINE STATUS',
+      'orders_summary': 'ORDERS SUMMARY',
+      'payout_history': 'Payout History',
+      'accept': 'Accept',
+      'cook': 'Cook',
+      'ready': 'Ready',
+      'complete': 'Complete',
+    };
+    return en[key] ?? key;
   }
 }

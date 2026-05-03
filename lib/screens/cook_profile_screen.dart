@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
 import '../models/app_models.dart';
+import '../widgets/language_selector.dart';
 
 class CookProfileScreen extends StatelessWidget {
   const CookProfileScreen({super.key});
@@ -26,21 +27,21 @@ class CookProfileScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionTitle('KITCHEN STATUS'),
+                  _buildSectionTitle(state.tr('online_status').toUpperCase()),
                   _buildStatusCard(state),
                   const SizedBox(height: 32),
-                  _buildSectionTitle('BUSINESS DETAILS'),
+                  _buildSectionTitle(state.tr('orders_summary').toUpperCase()),
                   _buildInfoTile(Icons.storefront, 'Kitchen Name', myCookProfile.name),
                   _buildInfoTile(Icons.location_on_outlined, 'Location', state.userAddress ?? 'Set Address'),
                   _buildInfoTile(Icons.access_time, 'Operational Hours', '10:00 AM - 09:00 PM'),
                   _buildInfoTile(Icons.description_outlined, 'Kitchen Bio', 'Traditional home-cooked meals prepared with love and organic ingredients.'),
                   const SizedBox(height: 32),
-                  _buildSectionTitle('REVENUE & SETTINGS'),
+                  _buildSectionTitle(state.tr('payout_history').toUpperCase()),
                   _buildActionTile(Icons.account_balance, 'Bank Account Details', 'Connected (HDFC ****4242)', () {}),
                   _buildActionTile(Icons.notifications_active_outlined, 'Order Notifications', 'Sound On', () {}),
                   _buildActionTile(Icons.verified_outlined, 'Certifications', 'FSSAI Verified', () {}),
                   const SizedBox(height: 40),
-                  _buildLogoutButton(context),
+                  _buildLogoutButton(context, state),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -182,7 +183,7 @@ class CookProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLogoutButton(BuildContext context) {
+  Widget _buildLogoutButton(BuildContext context, AppState state) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
@@ -192,7 +193,7 @@ class CookProfileScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
-        child: const Text('LOGOUT KITCHEN', style: TextStyle(color: AppTheme.danger, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+        child: Text(state.tr('logout').toUpperCase(), style: const TextStyle(color: AppTheme.danger, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
       ),
     );
   }

@@ -32,7 +32,7 @@ class CookDashboard extends StatelessWidget {
                   children: [
                     _buildPulseCard(state, myOrders),
                     const SizedBox(height: 32),
-                    _buildStatsRow(earnings, myCookProfile.rating.toString(), myOrders.length.toString()),
+                    _buildStatsRow(state, earnings, myCookProfile.rating.toString(), myOrders.length.toString()),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -48,9 +48,9 @@ class CookDashboard extends StatelessWidget {
                   indicatorWeight: 4,
                   labelStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
                   tabs: [
-                    const Tab(text: 'ACTIVE'),
-                    Tab(text: 'UPCOMING'),
-                    const Tab(text: 'PAST'),
+                    Tab(text: state.tr('active_orders').toUpperCase()),
+                    Tab(text: state.tr('upcoming_orders').toUpperCase()),
+                    Tab(text: state.tr('past_orders').toUpperCase()),
                   ],
                 ),
               ),
@@ -112,7 +112,8 @@ class CookDashboard extends StatelessWidget {
           child: Switch(
             value: state.isAvailable,
             onChanged: (val) => state.toggleAvailability(),
-            activeColor: AppTheme.success,
+            activeThumbColor: Colors.white,
+            activeTrackColor: AppTheme.success,
           ),
         ),
       ],
@@ -136,7 +137,7 @@ class CookDashboard extends StatelessWidget {
                 const Text('KITCHEN PULSE', style: TextStyle(color: AppTheme.accent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
                 const SizedBox(height: 8),
                 Text(
-                  pendingCount > 0 ? '$pendingCount New Orders!' : 'Kitchen is Ready',
+                  pendingCount > 0 ? '$pendingCount New Orders!' : state.tr('online_status'),
                   style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -148,14 +149,14 @@ class CookDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsRow(double earnings, String rating, String totalOrders) {
+  Widget _buildStatsRow(AppState state, double earnings, String rating, String totalOrders) {
     return Row(
       children: [
         _buildStatBox('Earnings', '₹${earnings.round()}', Icons.account_balance_wallet, AppTheme.secondary),
         const SizedBox(width: 12),
         _buildStatBox('Rating', rating, Icons.star, AppTheme.accent),
         const SizedBox(width: 12),
-        _buildStatBox('Total Orders', totalOrders, Icons.shopping_bag, AppTheme.primary),
+        _buildStatBox('Orders', totalOrders, Icons.shopping_bag, AppTheme.primary),
       ],
     );
   }
@@ -214,7 +215,7 @@ class CookDashboard extends StatelessWidget {
         children: [
           ListTile(
             contentPadding: const EdgeInsets.all(20),
-            leading: CircleAvatar(backgroundColor: AppTheme.bg, child: const Icon(Icons.person, color: AppTheme.textMuted)),
+            leading: const CircleAvatar(backgroundColor: AppTheme.bg, child: Icon(Icons.person, color: AppTheme.textMuted)),
             title: Text(order.customerName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
             subtitle: Text('Order #${order.id}', style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
             trailing: _buildStatusChip(order.status),
