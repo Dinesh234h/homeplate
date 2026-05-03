@@ -15,19 +15,34 @@ class CookMenuManagementScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Menu Management', style: TextStyle(fontWeight: FontWeight.w900)),
-        centerTitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          _buildInfoCard(),
-          const SizedBox(height: 32),
-          const Text('Active Dishes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 16),
-          ...myCook.menu.map((dish) => _buildDishCard(context, state, myCook.id, dish)),
-          const SizedBox(height: 100),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 120,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: const Text('KITCHEN MENU', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 2)),
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(colors: [Colors.black, Color(0xFF2D2D2D)]),
+                ),
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(24),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildInfoCard(),
+                const SizedBox(height: 32),
+                const Text('Live Items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 16),
+                ...myCook.menu.map((dish) => _buildDishCard(context, state, myCook.id, dish)),
+                const SizedBox(height: 120),
+              ]),
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(

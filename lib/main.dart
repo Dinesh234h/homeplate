@@ -122,7 +122,6 @@ class _CookNavigationWrapperState extends State<CookNavigationWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
     
     return Scaffold(
       body: IndexedStack(

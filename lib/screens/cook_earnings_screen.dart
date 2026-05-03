@@ -18,21 +18,28 @@ class CookEarningsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('My Earnings', style: TextStyle(fontWeight: FontWeight.w900)),
-        centerTitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          _buildSummaryCard(totalEarnings, commission, netAmount),
-          const SizedBox(height: 32),
-          _buildPayoutStatus(),
-          const SizedBox(height: 32),
-          const Text('Recent Payouts', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 16),
-          ...completedOrders.map((o) => _buildEarningsTile(o)),
-          const SizedBox(height: 100),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 250,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              background: _buildSummaryCard(totalEarnings, commission, netAmount),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(24),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildPayoutStatus(),
+                const SizedBox(height: 32),
+                const Text('Payout History', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 16),
+                ...completedOrders.map((o) => _buildEarningsTile(o)),
+                const SizedBox(height: 100),
+              ]),
+            ),
+          ),
         ],
       ),
     );
@@ -40,29 +47,24 @@ class CookEarningsScreen extends StatelessWidget {
 
   Widget _buildSummaryCard(double gross, double fee, double net) {
     return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppTheme.secondary, Color(0xFF2E7D32)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [BoxShadow(color: AppTheme.secondary.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 10))],
+      padding: const EdgeInsets.all(32),
+      decoration: const BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(40), bottomRight: Radius.circular(40)),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('AVAILABLE FOR PAYOUT', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-          const SizedBox(height: 8),
-          Text('₹${net.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+          const Text('TOTAL PAYOUTS', style: TextStyle(color: AppTheme.accent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
+          const SizedBox(height: 12),
+          Text('₹${net.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.w900, letterSpacing: -1)),
+          const SizedBox(height: 32),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildSimpleStat('Gross', '₹${gross.round()}'),
-              Container(width: 1, height: 30, color: Colors.white24),
-              _buildSimpleStat('Fee (8%)', '-₹${fee.round()}'),
-              Container(width: 1, height: 30, color: Colors.white24),
+              _buildSimpleStat('Gross Sales', '₹${gross.round()}'),
+              _buildSimpleStat('HomePlate Fee', '-₹${fee.round()}'),
               _buildSimpleStat('Orders', '12'),
             ],
           ),

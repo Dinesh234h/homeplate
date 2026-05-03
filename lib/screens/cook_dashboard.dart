@@ -10,14 +10,14 @@ class CookDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    // For demo purposes, we assume this user is Cook ID 0
     final myCookProfile = state.cooks.firstWhere((c) => c.id == 0);
     final myOrders = state.orders.where((o) => o.cookId == 0).toList();
     final earnings = myOrders.where((o) => o.status == 'completed').fold<double>(0, (sum, o) => sum + o.total);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8F9FA),
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
           _buildSliverAppBar(context, state, myCookProfile),
           SliverToBoxAdapter(
@@ -26,13 +26,15 @@ class CookDashboard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildPulseCard(state, myOrders),
+                  const SizedBox(height: 32),
                   _buildStatsRow(earnings, myCookProfile.rating.toString(), myOrders.length.toString()),
                   const SizedBox(height: 32),
                   _buildSectionHeader('Active Orders', myOrders.where((o) => o.status != 'completed').length.toString()),
                   const SizedBox(height: 16),
                   _buildOrderList(context, state, myOrders),
                   const SizedBox(height: 32),
-                  _buildSectionHeader('Your Menu', myCookProfile.menu.length.toString()),
+                  _buildSectionHeader('Top Dishes', myCookProfile.menu.length.toString()),
                   const SizedBox(height: 16),
                   _buildMenuList(context, state, myCookProfile),
                   const SizedBox(height: 100),
@@ -44,9 +46,48 @@ class CookDashboard extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddDishSheet(context, state, myCookProfile.id),
-        backgroundColor: AppTheme.primary,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('New Dish', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Colors.black,
+        icon: const Icon(Icons.add, color: AppTheme.accent),
+        label: const Text('NEW DISH', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.2)),
+      ),
+    );
+  }
+
+  Widget _buildPulseCard(AppState state, List<Order> orders) {
+    final pendingCount = orders.where((o) => o.status == 'placed').length;
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10))],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('KITCHEN PULSE', style: TextStyle(color: AppTheme.accent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                const SizedBox(height: 8),
+                Text(
+                  pendingCount > 0 ? '$pendingCount New Orders!' : 'All Caught Up!',
+                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  state.isAvailable ? 'Your kitchen is visible to neighbors' : 'Kitchen is currently closed',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: AppTheme.accent.withValues(alpha: 0.2), shape: BoxShape.circle),
+            child: Icon(state.isAvailable ? Icons.flash_on : Icons.flash_off, color: AppTheme.accent),
+          ),
+        ],
       ),
     );
   }
