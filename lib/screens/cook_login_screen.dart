@@ -47,9 +47,7 @@ class _CookLoginScreenState extends State<CookLoginScreen> {
             setState(() => _isLoading = false);
             _showError('Verification failed: ${e.message}');
           },
-          onVerificationCompleted: (credential) async {
-            // Auto-sign in if possible
-          },
+          onVerificationCompleted: (credential) async {},
         );
       } catch (e) {
         if (!mounted) return;
@@ -106,16 +104,16 @@ class _CookLoginScreenState extends State<CookLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Background Image with dark overlay for readability
           Positioned.fill(
-            child: Image.network(
-              'https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2070&auto=format&fit=crop',
-              fit: BoxFit.cover,
-              color: Colors.black.withValues(alpha: 0.6),
-              colorBlendMode: BlendMode.darken,
+            child: Opacity(
+              opacity: 0.1,
+              child: Image.network(
+                'https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2070&auto=format&fit=crop',
+                fit: BoxFit.cover,
+              ),
             ),
           ),
           SafeArea(
@@ -127,13 +125,13 @@ class _CookLoginScreenState extends State<CookLoginScreen> {
                   const SizedBox(height: 40),
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, color: Colors.white),
+                    child: const Icon(Icons.arrow_back, color: Colors.black),
                   ),
                   const SizedBox(height: 40),
-                  const Icon(Icons.restaurant_menu, color: AppTheme.accent, size: 48),
+                  const Icon(Icons.restaurant_menu, color: AppTheme.primary, size: 48),
                   const SizedBox(height: 16),
-                  const Text('Chef Partner', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
-                  const Text('Join the neighborhood cooking revolution.', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  const Text('Chef Partner', style: TextStyle(color: Colors.black, fontSize: 32, fontWeight: FontWeight.w900)),
+                  const Text('Grow your kitchen business with HomePlate.', style: TextStyle(color: AppTheme.textMuted, fontSize: 14)),
                   const SizedBox(height: 48),
                   
                   if (!_otpSent) ...[
@@ -143,9 +141,9 @@ class _CookLoginScreenState extends State<CookLoginScreen> {
                     _buildInputLabel('PHONE NUMBER'),
                     _buildPhoneInput(),
                   ] else ...[
-                    const Text('Verify OTP', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                    const Text('Verify OTP', style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    Text('Enter the 4-digit code sent to ${_phoneController.text}', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                    Text('Enter the 4-digit code sent to ${_phoneController.text}', style: const TextStyle(color: AppTheme.textMuted, fontSize: 13)),
                     const SizedBox(height: 32),
                     _buildOtpInput(),
                   ],
@@ -165,24 +163,24 @@ class _CookLoginScreenState extends State<CookLoginScreen> {
   Widget _buildInputLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, left: 4),
-      child: Text(label, style: const TextStyle(color: AppTheme.accent, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+      child: Text(label, style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
     );
   }
 
   Widget _buildTextField(TextEditingController controller, String hint, IconData icon) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: AppTheme.bg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+        border: Border.all(color: AppTheme.border),
       ),
       child: TextField(
         controller: controller,
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-          prefixIcon: Icon(icon, color: AppTheme.accent, size: 20),
+          hintStyle: TextStyle(color: Colors.black.withValues(alpha: 0.3)),
+          prefixIcon: Icon(icon, color: AppTheme.primary, size: 20),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(20),
         ),
@@ -193,25 +191,25 @@ class _CookLoginScreenState extends State<CookLoginScreen> {
   Widget _buildPhoneInput() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: AppTheme.bg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+        border: Border.all(color: AppTheme.border),
       ),
       child: Row(
         children: [
           const Padding(
             padding: EdgeInsets.only(left: 20, right: 10),
-            child: Text('+91', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            child: Text('+91', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
           ),
           Expanded(
             child: TextField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
               maxLength: 10,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
               decoration: InputDecoration(
                 hintText: 'Phone Number',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                hintStyle: TextStyle(color: Colors.black.withValues(alpha: 0.3)),
                 counterText: '',
                 border: InputBorder.none,
               ),
@@ -230,16 +228,16 @@ class _CookLoginScreenState extends State<CookLoginScreen> {
         height: 65,
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
+            color: AppTheme.bg,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+            border: Border.all(color: AppTheme.border),
           ),
           child: TextField(
             controller: _otpControllers[index],
             textAlign: TextAlign.center,
             keyboardType: TextInputType.number,
             maxLength: 1,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
             decoration: const InputDecoration(counterText: '', border: InputBorder.none),
             onChanged: (value) {
               if (value.isNotEmpty && index < 3) {
@@ -262,12 +260,12 @@ class _CookLoginScreenState extends State<CookLoginScreen> {
       child: ElevatedButton(
         onPressed: _isLoading ? null : (_otpSent ? _verifyOtp : _sendOtp),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.accent,
+          backgroundColor: AppTheme.primary,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
         child: _isLoading 
-          ? const CircularProgressIndicator(color: Colors.black)
-          : Text(_otpSent ? 'VERIFY & ENTER' : 'GET OTP', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 16)),
+          ? const CircularProgressIndicator(color: Colors.white)
+          : Text(_otpSent ? 'VERIFY & ENTER' : 'GET OTP', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
       ),
     );
   }

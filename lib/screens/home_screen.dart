@@ -5,6 +5,7 @@ import '../providers/app_state.dart';
 import '../theme/app_theme.dart';
 import '../models/app_models.dart';
 import 'cook_menu_screen.dart';
+import 'ai_meal_planner_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -25,7 +26,9 @@ class HomeScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 children: [
-                  _buildImpactCard(),
+                   _buildImpactCard(),
+                  const SizedBox(height: 16),
+                  _buildAIPlannerCard(context),
                   const SizedBox(height: 16),
                   _buildMap(),
                   _buildSectionHeader('Nearby Cooks', '${cooks.length} kitchens found'),
@@ -323,6 +326,60 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildAIPlannerCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A1A2E), Colors.black],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF1A1A2E).withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AIMealPlannerScreen())),
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: AppTheme.accent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.auto_awesome, color: AppTheme.accent, size: 12),
+                            SizedBox(width: 4),
+                            Text('AI POWERED', style: TextStyle(color: AppTheme.accent, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text('What should you eat today?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 4),
+                      const Text('Get a personalized meal suggestion based on your goals.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.white24, size: 32),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCookCard(BuildContext context, Cook cook) {
     return InkWell(
       onTap: () {
@@ -354,6 +411,24 @@ class HomeScreen extends StatelessWidget {
               child: Center(child: Text(cook.avatar, style: const TextStyle(fontSize: 28))),
             ),
             const SizedBox(width: 12),
+            SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: _buildAIPlannerCard(context),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Top Rated Kitchens', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                  TextButton(onPressed: () {}, child: const Text('View All', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold))),
+                ],
+              ),
+            ),
+          ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),

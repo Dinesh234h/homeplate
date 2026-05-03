@@ -36,6 +36,12 @@ class ProfileScreen extends StatelessWidget {
                     onTap: () => _showSavedAddresses(context, state),
                   ),
                   _buildMenuTile(
+                    icon: Icons.restaurant_outlined,
+                    title: 'Meal Preferences',
+                    subtitle: 'Diet, Spice, Allergies & Goals',
+                    onTap: () => _showMealPreferences(context, state),
+                  ),
+                  _buildMenuTile(
                     icon: Icons.payment_outlined,
                     title: 'Payment Methods',
                     subtitle: state.selectedPayment,
@@ -270,6 +276,129 @@ class ProfileScreen extends StatelessWidget {
             Navigator.pop(context);
           }, child: const Text('Save')),
         ],
+      ),
+    );
+  }
+
+  void _showMealPreferences(BuildContext context, AppState state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) => SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Meal Preferences', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text('Help our AI suggest the best home-made meals for you.', style: TextStyle(color: AppTheme.textMuted)),
+                const SizedBox(height: 32),
+                
+                const Text('DIET PREFERENCE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppTheme.textMuted, letterSpacing: 1.5)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _buildChip(setModalState, 'Veg', state.diet == 'veg', () => state.updateDietaryPreferences(newDiet: 'veg')),
+                    const SizedBox(width: 8),
+                    _buildChip(setModalState, 'Non-Veg', state.diet == 'non-veg', () => state.updateDietaryPreferences(newDiet: 'non-veg')),
+                  ],
+                ),
+                
+                const SizedBox(height: 32),
+                const Text('SPICE LEVEL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppTheme.textMuted, letterSpacing: 1.5)),
+                Slider(
+                  value: state.spiceLevel,
+                  min: 0,
+                  max: 100,
+                  activeColor: AppTheme.primary,
+                  onChanged: (val) {
+                    setModalState(() {});
+                    state.updateDietaryPreferences(newSpice: val);
+                  },
+                ),
+                
+                const SizedBox(height: 32),
+                const Text('HEALTH GOALS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppTheme.textMuted, letterSpacing: 1.5)),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    'Weight Loss', 'Muscle Gain', 'Healthy Living', 'Low Carb', 'High Protein'
+                  ].map((goal) {
+                    final isSelected = state.healthGoals.contains(goal);
+                    return _buildChip(setModalState, goal, isSelected, () {
+                      final list = List<String>.from(state.healthGoals);
+                      if (isSelected) {
+                        list.remove(goal);
+                      } else {
+                        list.add(goal);
+                      }
+                      state.updateDietaryPreferences(newGoals: list);
+                    });
+                  }).toList(),
+                ),
+                
+                const SizedBox(height: 32),
+                const Text('ALLERGIES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppTheme.textMuted, letterSpacing: 1.5)),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    'Nuts', 'Dairy', 'Gluten', 'Seafood', 'Soy'
+                  ].map((allergy) {
+                    final isSelected = state.allergies.contains(allergy);
+                    return _buildChip(setModalState, allergy, isSelected, () {
+                      final list = List<String>.from(state.allergies);
+                      if (isSelected) {
+                        list.remove(allergy);
+                      } else {
+                        list.add(allergy);
+                      }
+                      state.updateDietaryPreferences(newAllergies: list);
+                    });
+                  }).toList(),
+                ),
+                
+                const SizedBox(height: 48),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('SAVE PREFERENCES'),
+                  ),
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChip(StateSetter setModalState, String label, bool isSelected, VoidCallback onTap) {
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) {
+        setModalState(() {});
+        onTap();
+      },
+      selectedColor: AppTheme.primarySoft,
+      checkmarkColor: AppTheme.primary,
+      labelStyle: TextStyle(
+        color: isSelected ? AppTheme.primary : AppTheme.text,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
     );
   }

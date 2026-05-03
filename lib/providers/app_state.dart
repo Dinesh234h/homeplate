@@ -17,7 +17,7 @@ class AppState extends ChangeNotifier {
   String selectedFilter = 'All';
   String searchQuery = '';
   
-  // Advanced State for "Working Buttons"
+  // Advanced State
   List<String> savedAddresses = ["Home: Flat 402, Bellandur", "Work: Prestige Tech Park"];
   List<String> paymentMethods = ["UPI: avi@okaxis", "Visa ending in 4242", "Cash on Delivery (COD)"];
   String selectedPayment = "UPI: avi@okaxis";
@@ -178,6 +178,23 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateDietaryPreferences({
+    String? newDiet,
+    double? newSpice,
+    double? newBudget,
+    List<String>? newAllergies,
+    List<String>? newGoals,
+    List<String>? newCuisines,
+  }) {
+    if (newDiet != null) diet = newDiet;
+    if (newSpice != null) spiceLevel = newSpice;
+    if (newBudget != null) budgetLevel = newBudget;
+    if (newAllergies != null) allergies = newAllergies;
+    if (newGoals != null) healthGoals = newGoals;
+    if (newCuisines != null) cuisines = newCuisines;
+    notifyListeners();
+  }
+
   void updateProfile(String name, String p) {
     userName = name;
     phone = p;
@@ -187,6 +204,32 @@ class AppState extends ChangeNotifier {
   void setUserInfo(String name, String address) {
     userName = name;
     userAddress = address;
+    int cookIdx = cooks.indexWhere((c) => c.id == 0);
+    if (cookIdx != -1) {
+      final old = cooks[cookIdx];
+      cooks[cookIdx] = Cook(
+        id: old.id,
+        name: name,
+        short: name.split(' ')[0],
+        avatar: old.avatar,
+        tagline: old.tagline,
+        rating: old.rating,
+        ratingCount: old.ratingCount,
+        years: old.years,
+        distance: old.distance,
+        walkMin: old.walkMin,
+        addr: address,
+        c1: old.c1,
+        c2: old.c2,
+        fssai: old.fssai,
+        inspected: old.inspected,
+        top: old.top,
+        cookOfMonth: old.cookOfMonth,
+        veg: old.veg,
+        cuisines: old.cuisines,
+        menu: old.menu,
+      );
+    }
     if (address.isNotEmpty && !savedAddresses.contains(address)) {
       savedAddresses.insert(0, address);
     }
@@ -198,17 +241,6 @@ class AppState extends ChangeNotifier {
     if (cookIndex >= 0) {
       cooks[cookIndex].menu.add(dish);
       notifyListeners();
-    }
-  }
-
-  void updateDishInMenu(int cookId, String dishId, Dish updatedDish) {
-    final cookIndex = cooks.indexWhere((c) => c.id == cookId);
-    if (cookIndex >= 0) {
-      final dishIndex = cooks[cookIndex].menu.indexWhere((d) => d.id == dishId);
-      if (dishIndex >= 0) {
-        cooks[cookIndex].menu[dishIndex] = updatedDish;
-        notifyListeners();
-      }
     }
   }
 
@@ -247,6 +279,10 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateStatusPublic(int orderId, String status) {
+    _updateOrderStatus(orderId, status);
+  }
+
   void placeOrder(Cook cook, String slot) {
     final total = cart.fold<double>(0, (sum, item) => sum + (item.price * item.qty));
     final order = Order(
@@ -271,22 +307,11 @@ class AppState extends ChangeNotifier {
     currentOrder = order;
     cart.clear();
     notifyListeners();
-    _simulateOrderProgress(order.id);
-  }
-
-  void updateStatusPublic(int orderId, String status) {
-    _updateOrderStatus(orderId, status);
   }
 
   void toggleAvailability() {
     isAvailable = !isAvailable;
     notifyListeners();
-  }
-
-  void _simulateOrderProgress(int orderId) {
-    Future.delayed(const Duration(seconds: 5), () => _updateOrderStatus(orderId, 'accepted'));
-    Future.delayed(const Duration(seconds: 12), () => _updateOrderStatus(orderId, 'cooking'));
-    Future.delayed(const Duration(seconds: 25), () => _updateOrderStatus(orderId, 'ready'));
   }
 
   void _updateOrderStatus(int orderId, String status) {
@@ -299,6 +324,80 @@ class AppState extends ChangeNotifier {
   }
 
   void _initMockData() {
+    orders = [
+      Order(
+        id: 9921,
+        cookId: 0,
+        cookName: 'Neha\'s Kitchen',
+        cookShort: 'Neha',
+        cookAvatar: '👩‍🍳',
+        cookColors: [Colors.orange, Colors.red],
+        cookDist: 0.4,
+        cookWalk: 5,
+        cookAddr: '123, Kitchen Street',
+        items: [CartItem(cookId: 0, dishId: '1', name: 'Butter Chicken', emoji: '🍗', bg: '#FFE0B2', price: 320, qty: 2)],
+        total: 640,
+        status: 'placed',
+        otp: '4422',
+        slot: 'Lunch (12:30 PM)',
+        placedAt: DateTime.now().subtract(const Duration(minutes: 10)).millisecondsSinceEpoch,
+        customerName: 'Aarav Sharma',
+      ),
+      Order(
+        id: 9922,
+        cookId: 0,
+        cookName: 'Neha\'s Kitchen',
+        cookShort: 'Neha',
+        cookAvatar: '👩‍🍳',
+        cookColors: [Colors.orange, Colors.red],
+        cookDist: 0.4,
+        cookWalk: 5,
+        cookAddr: '123, Kitchen Street',
+        items: [CartItem(cookId: 0, dishId: '2', name: 'Paneer Tikka', emoji: '🧀', bg: '#E8F5E9', price: 280, qty: 1)],
+        total: 280,
+        status: 'preparing',
+        otp: '1133',
+        slot: 'Lunch (12:45 PM)',
+        placedAt: DateTime.now().subtract(const Duration(minutes: 45)).millisecondsSinceEpoch,
+        customerName: 'Ishani Roy',
+      ),
+      Order(
+        id: 9923,
+        cookId: 0,
+        cookName: 'Neha\'s Kitchen',
+        cookShort: 'Neha',
+        cookAvatar: '👩‍🍳',
+        cookColors: [Colors.orange, Colors.red],
+        cookDist: 0.4,
+        cookWalk: 5,
+        cookAddr: '123, Kitchen Street',
+        items: [CartItem(cookId: 0, dishId: '3', name: 'Dal Makhani', emoji: '🍲', bg: '#F3E5F5', price: 220, qty: 3)],
+        total: 660,
+        status: 'ready',
+        otp: '7788',
+        slot: 'Dinner (08:00 PM)',
+        placedAt: DateTime.now().subtract(const Duration(hours: 1)).millisecondsSinceEpoch,
+        customerName: 'Vikram Singh',
+      ),
+      Order(
+        id: 9915,
+        cookId: 0,
+        cookName: 'Neha\'s Kitchen',
+        cookShort: 'Neha',
+        cookAvatar: '👩‍🍳',
+        cookColors: [Colors.orange, Colors.red],
+        cookDist: 0.4,
+        cookWalk: 5,
+        cookAddr: '123, Kitchen Street',
+        items: [CartItem(cookId: 0, dishId: '4', name: 'Mixed Veg', emoji: '🥗', bg: '#E1F5FE', price: 180, qty: 2)],
+        total: 360,
+        status: 'completed',
+        otp: '9900',
+        slot: 'Lunch (01:15 PM)',
+        placedAt: DateTime.now().subtract(const Duration(days: 1)).millisecondsSinceEpoch,
+        customerName: 'Sanjana Malhotra',
+      ),
+    ];
     cooks = [
       Cook(
         id: 0,
@@ -351,36 +450,6 @@ class AppState extends ChangeNotifier {
             allergens: ["Dairy", "Gluten"],
             nutri: [Nutrient("Cal", "380"), Nutrient("Prot", "18g"), Nutrient("Carb", "32g")],
           ),
-          Dish(
-            id: "d2_2",
-            name: "Aloo Paratha (2 pcs)",
-            desc: "Spiced potato stuffed flatbread with curd and pickle",
-            emoji: "🥙",
-            price: 90,
-            rating: 4.8,
-            orders: 450,
-            veg: true,
-            bg: "#FFF9C4",
-            hbg: "linear-gradient(135deg, #FF6B47, #F4B942)",
-            ingredients: "Wheat flour, Potato, Spices",
-            allergens: ["Gluten"],
-            nutri: [Nutrient("Cal", "310"), Nutrient("Prot", "8g"), Nutrient("Carb", "45g")],
-          ),
-          Dish(
-            id: "d2_3",
-            name: "Kadai Paneer",
-            desc: "Paneer cubes cooked with bell peppers and freshly ground spices",
-            emoji: "🍲",
-            price: 180,
-            rating: 4.6,
-            orders: 320,
-            veg: true,
-            bg: "#FFCCBC",
-            hbg: "linear-gradient(135deg, #FF6B47, #F4B942)",
-            ingredients: "Paneer, Capsicum, Tomato, Spices",
-            allergens: ["Dairy"],
-            nutri: [Nutrient("Cal", "340"), Nutrient("Prot", "16g"), Nutrient("Carb", "12g")],
-          ),
         ],
       ),
       Cook(
@@ -418,36 +487,6 @@ class AppState extends ChangeNotifier {
             ingredients: "Rice, Lentils, Vegetables, Tamarind, Spices",
             allergens: [],
             nutri: [Nutrient("Cal", "350"), Nutrient("Prot", "12g"), Nutrient("Carb", "58g")],
-          ),
-          Dish(
-            id: "d4",
-            name: "Set Dosa (3 pcs)",
-            desc: "Soft and fluffy Dosas served with Saagu and Chutney",
-            emoji: "🥞",
-            price: 80,
-            rating: 4.8,
-            orders: 950,
-            veg: true,
-            bg: "#FFF9C4",
-            hbg: "linear-gradient(135deg, #2D5F3F, #5DAA75)",
-            ingredients: "Rice, Urad Dal, Spices",
-            allergens: [],
-            nutri: [Nutrient("Cal", "280"), Nutrient("Prot", "6g"), Nutrient("Carb", "48g")],
-          ),
-          Dish(
-            id: "d5",
-            name: "Ragi Mudde Thali",
-            desc: "Finger millet ball served with Soppu Saaru and Bassaru",
-            emoji: "🥣",
-            price: 130,
-            rating: 4.9,
-            orders: 540,
-            veg: true,
-            bg: "#D7CCC8",
-            hbg: "linear-gradient(135deg, #2D5F3F, #5DAA75)",
-            ingredients: "Ragi, Greens, Lentils, Spices",
-            allergens: [],
-            nutri: [Nutrient("Cal", "410"), Nutrient("Prot", "10g"), Nutrient("Carb", "72g")],
           ),
         ],
       ),

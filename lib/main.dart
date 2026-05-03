@@ -17,6 +17,7 @@ import 'screens/social_feed_screen.dart';
 import 'screens/order_history_screen.dart';
 import 'screens/cook_menu_management_screen.dart';
 import 'screens/cook_earnings_screen.dart';
+import 'screens/cook_profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -117,12 +118,11 @@ class _CookNavigationWrapperState extends State<CookNavigationWrapper> {
     const CookDashboard(),
     const CookMenuManagementScreen(),
     const CookEarningsScreen(),
-    const ProfileScreen(),
+    const CookProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
